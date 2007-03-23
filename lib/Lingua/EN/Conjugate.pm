@@ -12,9 +12,9 @@ require Exporter;
   @pron
 );
 
-use warnings;
-use strict;
-use diagnostics;
+#use warnings;
+#use strict;
+#use diagnostics;
 
 use vars qw(
   $VERSION
@@ -26,7 +26,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.2';
+$VERSION = '0.22';
 @pron    = qw(I you we he she it they);
 
 @tenses = qw(	present
@@ -58,7 +58,7 @@ while (<DATA>) {
     ( $verb, $simp, $part ) =
       map { s/^\s*|\s*$//g; $_ } ( $verb, $simp, $part );
     $irreg{$verb} = { past => $simp, part => $part };
-    print "$verb, $simp, $part\n";
+    #print "$verb, $simp, $part\n";
 
 }
 while (<DATA>) {
@@ -68,6 +68,7 @@ while (<DATA>) {
     my @nd = split / /, $line;
     $no_double{$_} = 1 for @nd;
 }
+
 
 sub conjugate {
 
@@ -118,10 +119,13 @@ sub conjugate {
     $part = $stem . 'ed';
     $part =~ s/([bcdfghjklmnpqrstvwxyz])eed$/$1ed/;
     $part =~ s/([bcdfghjklmnpqrstvwxyz])yed$/$1ied/;
+    $part =~ s/eed$/ed/;
     $past = $part;
 
     $gerund = $stem . 'ing';
     $gerund =~ s/([bcdfghjklmnpqrstvwxyz])eing$/$1ing/;
+    $gerund =~ s/ieing$/ying/;
+    $gerund =~ s/eed$/ed/;
 
     if ( $inf eq 'be' ) {
         $gerund = 'being';
@@ -134,7 +138,7 @@ sub conjugate {
 
     my $e = $inf =~ /[ho]$/ ? 'e' : '';
 
-    print "[$inf], [$past], [$part]\n";
+    #print "[$inf], [$past], [$part]\n";
 
     my %conj = (
 
@@ -196,6 +200,15 @@ sub conjugate {
 
     }
 
+    if ( $inf eq 'have' ) {
+        $conj{present} = {
+            ( map { $_ => $_ . " have" } qw(I you we they) ),
+            ( map { $_ => $_ . " has" } qw(he she it) )
+        };
+
+
+    }
+
     if ( $inf eq 'do' and $do->{helper} ne '' ) {
         delete $conj{$_}
           for
@@ -210,19 +223,25 @@ sub conjugate {
                 $c =~ s/  +/ /g;
 
                 #print "before changing word order for do:\n$c\n";
-                my ( $first, $second, $rest ) =
-                  $c =~ /([\w']+)\s*(\b\w+)?\s*(\b.*)?/;
-                $second = '' unless defined $second;
+                my ( $pron, $verb, $rest ) =
+                  $c =~ /([\w']+)?\s*(do|does|did)\b\s*(\b.*)?/;
+		$pron = '' unless defined $pron;
+                $verb = '' unless defined $verb;
                 $rest   = '' unless defined $rest;
-                if ( $do->{question} eq '?' ) {
-                    ( $first, $second ) = ( $second, $first );
-                }
-                $c = "$first $second";
+		#print "pron = $pron, verb = $verb, rest = $rest\n";
+
                 if ( defined $do->{not} and $do->{not} eq 'not' ) {
-                    $c .= ' not';
+                    $verb .= "n't";
                 }
-                $c .= "$rest $do->{helper}";
+
+                if ( $do->{question} eq '?' ) {
+                    ( $pron, $verb ) = ( $verb, $pron );
+                }
+                $c = "$pron $verb";
+
+                $c .= " $rest $do->{helper}";
                 $c =~ s/  +/ /g;
+		$c =~ s/^ *| *$//g;
 
                 #print "after changing word order for do:\n$c\n";
                 $conj{$t}{$p} = $c;
@@ -363,25 +382,36 @@ This module conjugates English verbs.
 
 Thanks to Susan Jones for the list of irregular verbs and an explanation of English verb tenses: http://www2.gsu.edu/~wwwesl/egw/grlists.htm.
 
-present         -> we drive
-present_prog    -> we are driving
-past            -> we drove
-past_prog       -> we were driving
-perfect         -> we have driven
-past_perfect    -> we had driven
-perfect_prog    -> we have been driving
-past_perfect_prog -> we had been driving
-modal           -> we will drive
-modal_prog      -> we will be driving
-modal_perf      -> we will have driven
-modal_perf_prog -> we will have been driving
-conjunctive_present -> we drive
-imperative      -> let's drive
+	present         	-> we drive
+	present_prog    	-> we are driving
+	past           	 	-> we drove
+	past_prog       	-> we were driving
+	perfect         	-> we have driven
+	past_perfect    	-> we had driven
+	perfect_prog    	-> we have been driving
+	past_perfect_prog 	-> we had been driving
+	modal           	-> we will drive
+	modal_prog      	-> we will be driving
+	modal_perf      	-> we will have driven
+	modal_perf_prog 	-> we will have been driving
+	conjunctive_present 	-> we drive
+	imperative      	-> let's drive
 
-note that the "future tense" is called "modal" here, with "will" as the default.  You could 
-substitute any of (shall / can / can't / could / must) as the modal verb, and it would still 
-make sense.  See http://www.englishclub.com/grammar/verbs-modals_can.htm. 
+See http://www.englishclub.com/grammar/verbs-modals_can.htm. 
 
+=over
+
+=item conjugate()
+
+  this conjugates a verb.
+
+
+
+=item conjugations()
+  
+   returns a pretty-printed table of conjugations.  (code stolen from L<Lingua::IT::Conjugate>)
+
+=back
 
 =head2 EXPORT
 
@@ -403,9 +433,13 @@ None by default. You can export the following functions and variables:
 Original version -- no guarantees.
 
 =item 0.2
+	
 Added a stop-list for words that shouldn't have the final consonant doubled when adding
 -ed or -ing.
 
+=item 0.21
+
+nothin much, just fixing the documentation...
 
 =back
 
@@ -483,6 +517,7 @@ go - went - gone
 grind - ground - ground
 grow - grew - grown
 hang - hung - hung
+have - had - had
 hear - heard - heard
 hide - hid - hidden
 hit - hit - hit
