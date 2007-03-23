@@ -1,7 +1,7 @@
 
 use Test;
 
-BEGIN { plan tests => 17, todo =>[2] }	
+BEGIN { plan tests => 17 }	
 
 use Lingua::EN::Conjugate qw( conjugate conjugations );
 use Data::Dumper;

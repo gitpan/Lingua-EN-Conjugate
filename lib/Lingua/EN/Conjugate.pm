@@ -26,7 +26,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.22';
+$VERSION = '0.23';
 @pron    = qw(I you we he she it they);
 
 @tenses = qw(	present
@@ -99,7 +99,7 @@ sub conjugate {
         #print "do conjug: $inf, $do->{not}, $do->{question}, $do->{helper}\n";
     }
 
-    my ( $part, $past, $gerund );
+    my ( $part, $past, $gerund, $s_form );
 
     my $stem = $inf;
 
@@ -123,12 +123,24 @@ sub conjugate {
     $past = $part;
 
     $gerund = $stem . 'ing';
-    $gerund =~ s/([bcdfghjklmnpqrstvwxyz])eing$/$1ing/;
+    $gerund =~ s/.([bcdfghjklmnpqrstvwxyz])eing$/$1ing/;
     $gerund =~ s/ieing$/ying/;
-    $gerund =~ s/eed$/ed/;
+
+
+    if ($inf =~ /[ho]$/) {
+	$s_form = $inf. "es";
+    }
+    elsif ($inf =~ /[bcdfghjklmnpqrstvwxyz]y$/) {
+	$s_form = $inf ."ies";
+	$s_form =~ s/yies$/ies/;
+    }
+    else {
+	$s_form = $inf . "s";
+    }
+
 
     if ( $inf eq 'be' ) {
-        $gerund = 'being';
+       # $gerund = 'being';
     }
 
     if ( defined $irreg{$inf} ) {
@@ -136,15 +148,15 @@ sub conjugate {
         $past = $irreg{$inf}{past};
     }
 
-    my $e = $inf =~ /[ho]$/ ? 'e' : '';
+    
 
-    #print "[$inf], [$past], [$part]\n";
+    print "[$inf], [$stem], [$past], [$part]\n";
 
     my %conj = (
 
         present => {
             ( map { $_ => $_ . " $inf" } qw(I you we they) ),
-            ( map { $_ => $_ . " ${inf}${e}s" } qw(he she it) )
+            ( map { $_ => $_ . " $s_form" } qw(he she it) )
         },
 
         present_prog => {
