@@ -24,3 +24,7 @@ know whether these are technically "tenses" or not, I'm an engineer, not a lingu
 0.26
 
 added the "allow_contractions" option
+
+0.27
+
+The passive tense was added.

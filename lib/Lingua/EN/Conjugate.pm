@@ -7,7 +7,6 @@ require Exporter;
 
 @EXPORT_OK = qw(
   conjugate
-  conjugate2
   conjugations
   @tenses
   @pron
@@ -28,7 +27,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.26';
+$VERSION = '0.27';
 @pron    = qw(I you we he she it they);
 
 @tenses = qw (
@@ -43,7 +42,7 @@ $VERSION = '0.26';
 	imperative
 );
 
-%tense_patterns = (
+%tense_patterns = ( ACTIVE => {
 
     #	TENSE		STATEMENT			QUESTION
     present      => [ '@ PRESENT',           'DO(#) @ (*) INF' ],
@@ -63,8 +62,34 @@ $VERSION = '0.26';
     modal_perf =>   [ '@ MODAL(#) (*) have PART', 'MODAL(#) @ (*) have PART' ],
     modal_perf_prog =>
                     [ '@ MODAL(#) (*) have been GERUND', 'MODAL(#) @ (*) have been GERUND' ],
-    conjunctive_present => [ '@ * INF',    'N/A' ],
-    imperative          => [ 'IMPERATIVE', 'N/A' ]
+    conjunctive_present => [ '@ INF',    'N/A' ],
+    imperative          => [ 'IMPERATIVE', 'N/A' ] },
+	
+	PASSIVE => {
+
+    #	TENSE		STATEMENT			QUESTION
+    present      => [ '@ BE(#) (*) PART',           'BE(#) @ (*) PART' ],
+    present_do   => [ 'N/A',     'N/A' ],
+    present_prog => [ '@ BE(#) (*) being PART',           'BE(#) @ (*) being PART' ],
+    past         => [ '@ WAS(#) (*) PART',           'WAS(#) @ (*) PART' ],
+    past_do      => [ 'N/A',     'N/A' ],
+    past_prog    => [ '@ WAS(#) (*) being PART',           'WAS(#) @ (*) being PART' ],
+    used_to      => [ '@ used to * be PART',     'N/A' ],
+    perfect      => [ '@ HAVE(#) (*) been PART',  'HAVE(#) @ (*) been PART' ],
+    past_perfect => [ '@ had(#) (*) been PART',   'had(#) @ (*) been PART' ],
+    perfect_prog => ['N/A',     'N/A' ],
+    past_perfect_prog =>
+                    [ 'N/A',     'N/A' ],
+    modal      =>   [ '@ MODAL(#) (*) be PART',       'MODAL(#) @ (*) be PART' ],
+    modal_prog =>   [ 'N/A',     'N/A' ],
+    modal_perf =>   [ '@ MODAL(#) (*) have been PART', 'MODAL(#) @ (*) have been PART' ],
+    modal_perf_prog =>
+                    [ 'N/A',     'N/A' ],
+    conjunctive_present => [ 'N/A',     'N/A' ],
+    imperative          => [ 'N/A',     'N/A' ] 
+
+
+	}
 
       #  				@ = pronoun, # = n't, * = not
 );
@@ -155,6 +180,7 @@ sub conjugate {
     $inf =~ s/  *//g;
 
     our $modal = defined $params{modal} ? $params{modal} : 'will';
+    our $passive = defined $params{passive} ? $params{passive} : undef;
 
     our $allow_contractions = defined $params{allow_contractions}? $params{allow_contractions}: undef;
 
@@ -226,7 +252,9 @@ sub conjugate {
 		return undef;
 	}
 
-        my $pattern = $tense_patterns{$tense}[$question] or return undef;
+	my $active_passive = $passive ? 'PASSIVE' : 'ACTIVE';
+
+        my $pattern = $tense_patterns{$active_passive}{$tense}[$question] or return undef;
 
         $pattern =~ s/\@/$pronoun/;
 
@@ -447,21 +475,27 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 	use Lingua::EN::Conjugate qw( conjugate conjugations );
 	
 
-	my $walk = conjugate( 'verb'=>'walk', 
+	print conjugate( 'verb'=>'look', 
 				'tense'=>'perfect_prog', 
-				'pronoun'=>'he' );  
-	print $walk . "\n";  
-				# he was walking
+				'pronoun'=>'he',
+				'negation'=>'not' );  
+ 
+			# he was not looking
 
 
 	my $go = conjugate( 'verb'=>'go', 
 				'tense'=>[qw(past modal_perf)], 
-				'modal'=>'might' ) ;       	
+				'modal'=>'might', 
+				'passive' => 1 ) ; 
+   
+			# returns a hashref   	
 
 
 	my @be = conjugate( 'verb'=>'be', 
 				'pronoun'=>[qw(I we)], 
 				'tense'=>'past_prog' );
+
+			# returns an array
 
 
 	#pretty printed table of conjugations
@@ -528,13 +562,13 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 
 =head1 DESCRIPTION
 
-This module conjugates English verbs.
+This module constructs various verb tenses in English.  
 
 Thanks to Susan Jones for the list of irregular verbs and an explanation of English verb tenses L<http://www2.gsu.edu/~wwwesl/egw/grlists.htm>.
 
 =over
 
-=item conjugate('verb'=> ... , 'tense'=> ... , 'pronoun'=> ... , 'question'=> $q, 'negation => $n, 'allow_contractions'=>$a)
+=item conjugate('verb'=> 'go' , OPTIONS)
 
 
 In scalar context with tense and pronoun defined as scalars, only one conjugation is returned.
@@ -548,12 +582,22 @@ In array context, it returns an array of conjugated forms ordered by tense, then
 
 'verb'=>'coagulate'
 
+The only required parameter.
+
 =item tense
 
  'tense'=>'past'
  'tense'=>['modal_perf', 'used_to']
 
 If no 'tense' argument is supplied, all applicable tenses are returned.  
+
+=item passive
+
+ 'passive' => 1
+ 'passive' => undef (default)
+
+If specified, the passive voice is used.  Some tenses, such as Imperiative, are disabled when the passive option is used.
+
 
 =item pronoun
 
@@ -582,6 +626,9 @@ this will substitute "not" for "n_t" as appropriate.
 =item modal
 
  'modal' => one of: may, might, must, should, could, would, will (default), can, shall.
+
+Specifies what modal verb to use for the modal tenses.
+
 
 L<http://www.kyrene.k12.az.us/schools/brisas/sunda/verb/1help.htm> 
 
