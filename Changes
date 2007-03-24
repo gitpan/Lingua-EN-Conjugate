@@ -18,6 +18,9 @@ nothin much, just fixing the documentation...
 
 lots of changes under the hood.  Added the ability to form questions and negations, since 
 these are harder to do with conjugated verbs; you've got to switch the word order around 
-and so forth.  Also added some new "tenses" ... present_do, past_do, and used_to... these
-don't seem to be officially recognized tenses, but they're very commonly used!
+and so forth.  Also added some new "tenses" ... present_do, past_do, and used_to... I don't 
+know whether these are technically "tenses" or not, I'm an engineer, not a linguist!!
 
+0.26
+
+added the "allow_contractions" option

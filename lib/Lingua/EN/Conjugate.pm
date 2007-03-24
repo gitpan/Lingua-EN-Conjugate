@@ -28,10 +28,20 @@ use vars qw(
 
 );
 
-$VERSION = '0.25';
+$VERSION = '0.26';
 @pron    = qw(I you we he she it they);
 
-
+@tenses = qw (
+	present	present_prog
+	past	past_prog
+	present_do	past_do
+	past_prog	used_to
+	perfect		past_perfect
+	perfect_prog	past_perfect_prog
+	modal		modal prog
+	modal_perf_prog	conjunctive_present
+	imperative
+);
 
 %tense_patterns = (
 
@@ -59,7 +69,6 @@ $VERSION = '0.25';
       #  				@ = pronoun, # = n't, * = not
 );
 
-@tenses = keys %tense_patterns;
 
 while (<DATA>) {
     chomp;
@@ -147,10 +156,11 @@ sub conjugate {
 
     our $modal = defined $params{modal} ? $params{modal} : 'will';
 
+    our $allow_contractions = defined $params{allow_contractions}? $params{allow_contractions}: undef;
+
     my @modals   = qw(may might must should could would will can shall);
-    my $is_modal = 0;
-    for (@modals) { $is_modal++ if $modal =~ /^$_$/i; }
-    if ( $is_modal == 0 ) {
+
+    unless ( match_any($modal, @modals) ) {
         warn "$modal is not a modal verb!!\n";
         return 0;
     }
@@ -212,8 +222,13 @@ sub conjugate {
         if ( $tense eq 'past' and defined $negation ) { 
 	    $tense = 'past_do'; 
 	}
+	if ( $tense eq 'conjunctive_present' and defined $negation ) {
+		return undef;
+	}
 
         my $pattern = $tense_patterns{$tense}[$question] or return undef;
+
+        $pattern =~ s/\@/$pronoun/;
 
         if ( $pattern eq 'N/A' ) { return undef; }
         $pattern =~ s/DO/DO($pronoun)/e;
@@ -243,6 +258,15 @@ sub conjugate {
             $pattern =~ s/\(?\*\)? */ /;
         }
 
+	if ($allow_contractions) {
+		$pattern =~ s/\b(she|he|it|I|we|they|you) would\b/$1'd/i;
+		$pattern =~ s/\b(she|he|it|I|we|they|you) will\b/$1'll/i;
+		$pattern =~ s/\b(she|he|it) is\b/$1's/i;
+		$pattern =~ s/\b(we|they|you) are\b/$1're/i;
+		$pattern =~ s/\bI am\b/I'm/i;
+		$pattern =~ s/\b(I|we|they|you) have\b/$1've/i;
+	}
+
         $pattern =~ s/GERUND/$gerund/;
         $pattern =~ s/PART/$part/;
         if ( $pattern =~ /PRESENT/ ) {
@@ -262,13 +286,20 @@ sub conjugate {
             $pattern =~ s/INF/$inf/;
 
         }
-        $pattern =~ s/\@/$pronoun/;
+
 
         $pattern =~ s/  */ /g;
         return $pattern;
 
     }
+
+sub match_any {
+	my $a = shift;
+	my @b = @_;
+	for (@b) { return 1 if $a =~ /\b$_\b/i ; }
+	return undef;
 }
+
 
 sub PRESENT {
     my $inf     = shift;
@@ -277,7 +308,8 @@ sub PRESENT {
 
     if ( $inf =~ /be/i )   { return BE($pronoun); }
     if ( $inf =~ /have/i ) { return HAVE($pronoun); }
-    for (qw( he she it )) { return $s_form if $pronoun eq $_ }
+    if (match_any($pronoun, qw(he she it))) { return $s_form; }
+ 
     return $inf;
 
 }
@@ -288,12 +320,12 @@ sub IMPERATIVE {
     my $pronoun  = shift;
 
     if ( $pronoun =~ /we/i ) {
+        my $retval = $allow_contractions? "let's" : "let us";
         if ( defined $negation ) {
-            return "let's not $inf";
-        }
-        else {
-            return "let's $inf";
-        }
+		$retval .= " not";
+	}
+        $retval .= " $inf";
+	return $retval;
     }
     elsif ( $pronoun =~ /you/i ) {
         if ( $negation =~ /n_t/i ) {
@@ -314,25 +346,28 @@ sub IMPERATIVE {
 sub BE {
     my $pronoun = shift;
     if ( $pronoun eq 'I' ) { return 'am' }
-    for (qw( he she it )) { return 'is' if $pronoun eq $_ }
+
+ if (match_any($pronoun, qw(he she it))) { return 'is'; }
+
     return 'are';
 }
 
 sub WAS {
     my $pronoun = shift;
-    for (qw( I he she it )) { return 'was' if $pronoun eq $_ }
+ if (match_any($pronoun, qw(I he she it))) { return 'was'; }
+
     return 'were';
 }
 
 sub HAVE {
     my $pronoun = shift;
-    for (qw( he she it )) { return 'has' if $pronoun eq $_ }
+ if (match_any($pronoun, qw(he she it))) { return 'has'; }
     return 'have';
 }
 
 sub DO {
     my $pronoun = shift;
-    for (qw( he she it )) { return 'does' if $pronoun eq $_ }
+ if (match_any($pronoun, qw(he she it))) { return 'does'; }
     return 'do';
 }
 
@@ -340,12 +375,15 @@ sub N_T {
 
     #add contracted negation to modal verbs:
     my $modal       = shift;
-    my @no_contract = qw(be being been am may);
-    for (@no_contract) { return undef if $modal eq $_; }
+
+    return undef if match_any($modal, qw(be being been am may));
+  
     my %exceptions =
       ( "will" => "won't", "can" => "can't", "shall" => "shan't" );
     return $exceptions{$modal} if defined $exceptions{$modal};
     return $modal . "n't";
+}
+
 }
 
 sub init_verb {
@@ -496,7 +534,7 @@ Thanks to Susan Jones for the list of irregular verbs and an explanation of Engl
 
 =over
 
-=item conjugate('verb'=> ... , 'tense'=> ... , 'pronoun'=> ... , 'question'=> $q, 'negation => $n)
+=item conjugate('verb'=> ... , 'tense'=> ... , 'pronoun'=> ... , 'question'=> $q, 'negation => $n, 'allow_contractions'=>$a)
 
 
 In scalar context with tense and pronoun defined as scalars, only one conjugation is returned.
@@ -547,6 +585,19 @@ this will substitute "not" for "n_t" as appropriate.
 
 L<http://www.kyrene.k12.az.us/schools/brisas/sunda/verb/1help.htm> 
 
+=item allow_contractions
+
+  'allow_contractions'=>1  allows "I am"->"I'm", "they are"->"they're" and so on
+  'allow_contractions'=>0  (default)
+
+The negation rule above is applied before the allow_contractions rule is checked:
+
+	allow_contractions =>1, negation=>n_t : "he isn't walking"; 
+	allow_contractions =>0, negation=>n_t : "he isn't walking";
+	allow_contractions =>1, negation=>not : "he's not walking";
+	allow_contractions =>0, negation=>not " "he is not walking";
+
+
 =item conjugations()
   
    returns a pretty-printed table of conjugations.  (code stolen from L<Lingua::IT::Conjugate>)
@@ -564,6 +615,13 @@ None by default. You can export the following functions and variables:
 
 =head1 BUGS
 
+=head1 TODO
+
+ HAVE TO + Verb
+ HAVE GOT TO + Verb
+ BE ABLE TO + Verb
+ OUGHT TO + Verb
+ BE SUPPOSED TO + Verb
 
 =head1 AUTHOR
 

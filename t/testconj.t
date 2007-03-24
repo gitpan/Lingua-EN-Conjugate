@@ -1,11 +1,17 @@
 
 use Test;
 
-BEGIN { plan tests => 17 }	
+BEGIN { plan tests => 20 }	
 
 use Lingua::EN::Conjugate qw( conjugate conjugations );
 use Data::Dumper;
 
+ok(conjugate( 'verb' => 'walk', 'tense' => 'present_prog', 'pronoun' => 'he', 'negation'=>'n_t', 'allow_contractions'=>1 ), 
+	"he isn't walking");
+ok(conjugate( 'verb' => 'walk', 'tense' => 'present_prog', 'pronoun' => 'he', 'negation'=>'not', 'allow_contractions'=>1 ), 
+	"he's not walking");
+ok(conjugate( 'verb' => 'walk', 'tense' => 'present_prog', 'pronoun' => 'he', 'negation'=>'not', 'allow_contractions'=>0 ), 
+	'he is not walking');
 
 	ok(conjugate( 'verb' => 'have', 'tense' => 'present', 'pronoun' => 'he' ), 'he has');
 	ok(conjugate('verb'=>'study', 'pronoun'=>'she', 'tense'=>'present'), 'she studies');
