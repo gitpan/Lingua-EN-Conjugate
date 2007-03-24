@@ -8,6 +8,7 @@ require Exporter;
 @EXPORT_OK = qw(
   conjugate
   conjugations
+  contraction
   @tenses
   @pron
 );
@@ -27,7 +28,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.28';
+$VERSION = '0.291';
 @pron    = qw(I you we he she it they);
 
 @tenses = qw (
@@ -45,53 +46,53 @@ $VERSION = '0.28';
 %tense_patterns = ( ACTIVE => {
 
     #	TENSE		STATEMENT			QUESTION
-    present      => [ '@ PRESENT',           'DO(#) @ (*) INF' ],
-    present_do   => [ '@ DO(#) (*) INF',     'DO(#) @ (*) INF' ],
-    present_prog => [ '@ BE(#) (*) GERUND',  'BE(#) @ (*) GERUND' ],
-    past         => [ '@ PAST',              'did(#) @ (*) INF' ],
-    past_do      => [ '@ did(#) (*) INF',    'did(#) @ (*) INF' ],
-    past_prog    => [ '@ WAS(#) (*) GERUND', 'WAS(#) @ (*) GERUND' ],
-    used_to      => [ '@ used to * INF',     'N/A' ],
-    perfect      => [ '@ HAVE(#) (*) PART',  'HAVE(#) @ (*) PART' ],
-    past_perfect => [ '@ had(#) (*) PART',   'had(#) @ (*) PART' ],
-    perfect_prog => [ '@ HAVE(#) (*) been GERUND', 'HAVE(#) @ (*) been GERUND' ],
+    present      => [ '@ PRESENT',           	'DO @ * INF' ],
+    present_do   => [ '@ DO * INF',     	'DO @ * INF' ],
+    present_prog => [ '@ BE * GERUND',  	'BE @ * GERUND' ],
+    past         => [ '@ PAST',              	'did @ * INF' ],
+    past_do      => [ '@ did * INF',    	'did @ * INF' ],
+    past_prog    => [ '@ WAS * GERUND', 	'WAS @ * GERUND' ],
+    used_to      => [ '@ used to * INF',     	'N/A' ],
+    perfect      => [ '@ HAVE * PART',  	'HAVE @ * PART' ],
+    past_perfect => [ '@ had * PART',   	'had @ * PART' ],
+    perfect_prog => [ '@ HAVE * been GERUND', 	'HAVE @ * been GERUND' ],
     past_perfect_prog =>
-                    [ '@ had(#) (*) been GERUND', 'had(#) @ (*) been GERUND' ],
-    modal      =>   [ '@ MODAL(#) (*) INF',       'MODAL(#) @ (*) INF' ],
-    modal_prog =>   [ '@ MODAL(#) (*) be GERUND', 'MODAL(#) @ (*) be GERUND' ],
-    modal_perf =>   [ '@ MODAL(#) (*) have PART', 'MODAL(#) @ (*) have PART' ],
+                    [ '@ had * been GERUND', 	'had @ * been GERUND' ],
+    modal      =>   [ '@ MODAL * INF',       	'MODAL @ * INF' ],
+    modal_prog =>   [ '@ MODAL * be GERUND', 	'MODAL @ * be GERUND' ],
+    modal_perf =>   [ '@ MODAL * have PART', 	'MODAL @ * have PART' ],
     modal_perf_prog =>
-                    [ '@ MODAL(#) (*) have been GERUND', 'MODAL(#) @ (*) have been GERUND' ],
-    conjunctive_present => [ '@ INF',    'N/A' ],
-    imperative          => [ 'IMPERATIVE', 'N/A' ] },
+                    [ '@ MODAL * have been GERUND', 'MODAL @ * have been GERUND' ],
+    conjunctive_present => [ '@ INF',    	'N/A' ],
+    imperative          => [ 'IMPERATIVE', 	'N/A' ] },
 	
 	PASSIVE => {
 
     #	TENSE		STATEMENT			QUESTION
-    present      => [ '@ BE(#) (*) PART',           'BE(#) @ (*) PART' ],
-    present_do   => [ 'N/A',     'N/A' ],
-    present_prog => [ '@ BE(#) (*) being PART',           'BE(#) @ (*) being PART' ],
-    past         => [ '@ WAS(#) (*) PART',           'WAS(#) @ (*) PART' ],
-    past_do      => [ 'N/A',     'N/A' ],
-    past_prog    => [ '@ WAS(#) (*) being PART',           'WAS(#) @ (*) being PART' ],
-    used_to      => [ '@ used to * be PART',     'N/A' ],
-    perfect      => [ '@ HAVE(#) (*) been PART',  'HAVE(#) @ (*) been PART' ],
-    past_perfect => [ '@ had(#) (*) been PART',   'had(#) @ (*) been PART' ],
-    perfect_prog => ['N/A',     'N/A' ],
+    present      => [ '@ BE * PART',           	'BE @ * PART' ],
+    present_do   => [ 'N/A',     		'N/A' ],
+    present_prog => [ '@ BE * being PART',      'BE @ * being PART' ],
+    past         => [ '@ WAS * PART',           'WAS @ * PART' ],
+    past_do      => [ 'N/A',     		'N/A' ],
+    past_prog    => [ '@ WAS * being PART',     'WAS @ * being PART' ],
+    used_to      => [ '@ used to * be PART',    'N/A' ],
+    perfect      => [ '@ HAVE * been PART',  	'HAVE @ * been PART' ],
+    past_perfect => [ '@ had * been PART',   	'had @ * been PART' ],
+    perfect_prog => ['N/A',     		'N/A' ],
     past_perfect_prog =>
-                    [ 'N/A',     'N/A' ],
-    modal      =>   [ '@ MODAL(#) (*) be PART',       'MODAL(#) @ (*) be PART' ],
-    modal_prog =>   [ 'N/A',     'N/A' ],
-    modal_perf =>   [ '@ MODAL(#) (*) have been PART', 'MODAL(#) @ (*) have been PART' ],
+                    [ 'N/A',     		'N/A' ],
+    modal      =>   [ '@ MODAL * be PART',      'MODAL @ * be PART' ],
+    modal_prog =>   [ 'N/A',     		'N/A' ],
+    modal_perf =>   [ '@ MODAL * have been PART', 'MODAL @ * have been PART' ],
     modal_perf_prog =>
-                    [ 'N/A',     'N/A' ],
-    conjunctive_present => [ 'N/A',     'N/A' ],
-    imperative          => [ 'N/A',     'N/A' ] 
+                    [ 'N/A',     		'N/A' ],
+    conjunctive_present => [ 'N/A',     	'N/A' ],
+    imperative          => [ 'N/A',     	'N/A' ] 
 
 
 	}
 
-      #  				@ = pronoun, # = n't, * = not
+      #  				@ = pronoun, * = not
 );
 
 
@@ -171,9 +172,10 @@ sub conjugate {
 
     my %params = @_;
 
-    #print Dumper \%params;
-
+   #parameters:
     our ($inf, $modal, $passive, $allow_contractions, $question, $negation);
+
+   #forms of the verb determined by "init_verb":
     our ($part, $past, $gerund, $s_form);
 
     $inf =
@@ -184,7 +186,6 @@ sub conjugate {
 
     $modal = defined $params{modal} ? $params{modal} : 'will';
     $passive = defined $params{passive} ? $params{passive} : undef;
-
     $allow_contractions = defined $params{allow_contractions}? $params{allow_contractions}: undef;
 
     my @modals   = qw(may might must should could would will can shall);
@@ -267,38 +268,6 @@ sub conjugate {
         $pattern =~ s/HAVE/HAVE($pronoun)/e;
         $pattern =~ s/MODAL/$modal/;
         $pattern =~ s/BE/BE($pronoun)/e;
-
-        if ($negation) {
-            if ( $pattern =~ /\(\*\)/ and $pattern =~ /([a-zA-Z]*)\(\#\)/ ) {
-                my $did = $1;
-                if ( $negation =~ /n_t/i and my $didn_t = N_T($did) ) {
-                    $pattern =~ s/\w*\(\#\) */$didn_t /;
-                    $pattern =~ s/\(\*\) */ /;
-                }
-                else {
-                    $pattern =~ s/ *\(\#\) */ /;
-                    $pattern =~ s/ *\(\*\) */ not /;
-                }
-            }
-            else {
-                $pattern =~ s/\* */not /;
-            }
-        }
-        else {
-            $pattern =~ s/\(\#\) */ /;
-            $pattern =~ s/\(?\*\)? */ /;
-        }
-
-	if ($allow_contractions) {
-		$pattern =~ s/\b(she|he|it|I|we|they|you) would\b/$1'd/i;
-		$pattern =~ s/\b(she|he|it|I|we|they|you) will\b/$1'll/i;
-		$pattern =~ s/\b(she|he|it) is\b/$1's/i;
-		$pattern =~ s/\b(we|they|you) are\b/$1're/i;
-		$pattern =~ s/\bI am\b/I'm/i;
-		$pattern =~ s/\b(I|we|they|you) have\b/$1've/i;
-		$pattern =~ s/\b(he|she) has\b/$1's/i;
-	}
-
         $pattern =~ s/GERUND/$gerund/;
         $pattern =~ s/PART/$part/;
         if ( $pattern =~ /PRESENT/ ) {
@@ -316,10 +285,25 @@ sub conjugate {
         elsif ( $pattern =~ /INF/ ) {
             return undef unless defined $inf;
             $pattern =~ s/INF/$inf/;
-
         }
 
-        $pattern =~ s/  */ /g;
+        #$pattern =~ s/  */ /g;
+
+        if ($negation) {
+            $pattern =~ s/\*/not/;
+	    if ($negation eq 'n_t') {
+		$pattern = contraction($pattern, 1, 0);
+	    }
+        }
+	else {
+		$pattern =~ s/ \* / /;
+	}
+
+	if ($allow_contractions) {
+	   $pattern = contraction($pattern, 0, 1);
+	}
+
+        #$pattern =~ s/  */ /g;
         return $pattern;
 
     }
@@ -342,7 +326,6 @@ sub PRESENT {
     if (match_any($pronoun, qw(he she it))) { return $s_form; }
  
     return $inf;
-
 }
 
 sub IMPERATIVE {
@@ -351,7 +334,7 @@ sub IMPERATIVE {
     my $pronoun  = shift;
 
     if ( $pronoun =~ /we/i ) {
-        my $retval = $allow_contractions? "let's" : "let us";
+        my $retval = "let us";
         if ( defined $negation ) {
 		$retval .= " not";
 	}
@@ -359,10 +342,7 @@ sub IMPERATIVE {
 	return $retval;
     }
     elsif ( $pronoun =~ /you/i ) {
-        if ( $negation =~ /n_t/i ) {
-            return "don't $inf";
-        }
-        elsif ( $negation =~ /not/i ) {
+        if ( $negation ) {
             return "do not $inf";
         }
         else {
@@ -402,6 +382,95 @@ sub DO {
     return 'do';
 }
 
+
+
+}
+
+sub contraction {
+
+	my $verb_phrase = $_[0];
+	my $contract_n_t = 1;
+	my $contract_other = 1;
+	if (scalar @_ > 1) { $contract_n_t = $_[1]; }
+	if (scalar @_ > 2) { $contract_other = $_[2]; }
+
+		my @modal = qw(may might must be being been am are is was were do does did should could would have has had will can shall);
+		my @pronoun = qw(I you he she it we they);
+		
+		my $modal_re = '\b(?:' . join("|", @modal) . ')';
+		$modal_re = qr($modal_re);
+
+		my $pronoun_re = '\b(?:' . join("|", @pronoun) . ')\b';
+		$pronoun_re = qr($pronoun_re);
+
+	if ($contract_n_t) {
+
+		# MODAL-NOT -> MODAL-N_T
+		# MODAL-PRONOUN-NOT -> MODAL-N_T-PRONOUN
+	
+
+
+		my $new_phrase = $verb_phrase;
+		while (1) {
+	
+			if ($new_phrase =~ /($modal_re) not\b/  ) {
+				my $m = $1;
+				if (my $m2 = N_T($m)) {
+					$new_phrase =~ s/$m not\b/$m2/;
+				}
+			}
+			if ($new_phrase =~ /($modal_re) ($pronoun_re) not/) {
+				my $p = $2; my $m = $1;
+				if (my $m2 = N_T($m)) {
+					$new_phrase =~ s/$m\b/$m2/;
+					$new_phrase =~ s/$p not\b/$p/;
+				}
+			}
+			last if $new_phrase eq $verb_phrase;
+			$verb_phrase = $new_phrase;
+		}
+	}
+
+	#my @modal = qw(may might must be being been am are is was were do does did should could would have has had will can shall);
+
+	if ($contract_other) {
+
+
+
+		while ($verb_phrase =~ /(\b([\w']*(?: not)?) ?($pronoun_re|$modal_re|let) ($modal_re|us)\b)/g) {
+			#print "1 -> $1\n\t, 2-> $2, 3->$3, 4->$4\n";
+			my $orig_phrase = $1;
+			my $_phrase = $1;
+			my $w1 = $2;
+			my $w2 = $3;
+			my $w3 = $4;
+
+			# don't form contractions following modal verbs:
+			# nobody ever says "could I've been walking?", they say "could I have been walking?".
+
+			next if $w1 =~ /$modal_re/;
+			
+		
+			$_phrase =~ s/\blet us\b/let's/ig;
+			$_phrase =~ s/\b(she|he|it|I|we|they|you) would\b/$1'd/ig;
+			$_phrase =~ s/\b(she|he|it|I|we|they|you) will\b/$1'll/ig;
+			$_phrase =~ s/\b(she|he|it) is\b/$1's/ig;
+			$_phrase =~ s/\b(we|they|you) are\b/$1're/ig;
+			$_phrase =~ s/\bI am\b/I'm/ig;
+			$_phrase =~ s/\b(I|we|they|you|could|should|would) have\b/$1've/ig;
+			$_phrase =~ s/\b(I|we|they|you|he|she) had\b/$1'd/ig;
+			$_phrase =~ s/\b(he|she) has\b/$1's/ig;
+
+			next if $_phrase eq $orig_phrase;
+
+			$verb_phrase =~ s/$orig_phrase/$_phrase/;
+		}
+	}
+
+	return $verb_phrase;
+
+}
+
 sub N_T {
 
     #add contracted negation to modal verbs:
@@ -413,8 +482,6 @@ sub N_T {
       ( "will" => "won't", "can" => "can't", "shall" => "shan't" );
     return $exceptions{$modal} if defined $exceptions{$modal};
     return $modal . "n't";
-}
-
 }
 
 sub init_verb {
@@ -502,61 +569,54 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 
 	#pretty printed table of conjugations
 
-	print conjugations( 'verb'=>'walk', 'negation'=>'n_t' );
+	print conjugations( 'verb'=>'walk', 
+				'question'=>1, 
+				'allow_contractions'=>1, 
+				'modal'=>'should', 
+				'negation'=>'n_t',
+				'passive'=>1);
  ------------- PRESENT ------------- ---------- PRESENT_PROG -----------
- I don't walk                        I am not walking
- you don't walk                      you aren't walking
- he doesn't walk                     he isn't walking
- we don't walk                       we aren't walking
- they don't walk                     they aren't walking
+ don't I walk                        am I not walking
+ don't you walk                      aren't you walking
+ doesn't he walk                     isn't he walking
+ don't we walk                       aren't we walking
+ don't they walk                     aren't they walking
  -------------- PAST --------------- ------------ PAST_PROG ------------
- I didn't walk                       I wasn't walking
- you didn't walk                     you weren't walking
- he didn't walk                      he wasn't walking
- we didn't walk                      we weren't walking
- they didn't walk                    they weren't walking
- ------------- PERFECT ------------- ---------- PAST_PERFECT -----------
- I haven't walked                    I hadn't walked
- you haven't walked                  you hadn't walked
- he hasn't walked                    he hadn't walked
- we haven't walked                   we hadn't walked
- they haven't walked                 they hadn't walked
- ---------- PERFECT_PROG ----------- -------- PAST_PERFECT_PROG --------
- I haven't been walking              I hadn't been walking
- you haven't been walking            you hadn't been walking
- he hasn't been walking              he hadn't been walking
- we haven't been walking             we hadn't been walking
- they haven't been walking           they hadn't been walking
- -------------- MODAL -------------- ----------- MODAL_PROG ------------
- I won't walk                        I won't be walking
- you won't walk                      you won't be walking
- he won't walk                       he won't be walking
- we won't walk                       we won't be walking
- they won't walk                     they won't be walking
- ----------- MODAL_PERF ------------ --------- MODAL_PERF_PROG ---------
- I won't have walked                 I won't have been walking
- you won't have walked               you won't have been walking
- he won't have walked                he won't have been walking
- we won't have walked                we won't have been walking
- they won't have walked              they won't have been walking
- ------- CONJUNCTIVE_PRESENT ------- ----------- IMPERATIVE ------------
- I not walk
- you not walk                        don't walk
- he not walk
- we not walk                         let's not walk
- they not walk
+ didn't I walk                       wasn't I walking
+ didn't you walk                     weren't you walking
+ didn't he walk                      wasn't he walking
+ didn't we walk                      weren't we walking
+ didn't they walk                    weren't they walking
  ----------- PRESENT_DO ------------ ------------- PAST_DO -------------
- I don't walk                        I didn't walk
- you don't walk                      you didn't walk
- he doesn't walk                     he didn't walk
- we don't walk                       we didn't walk
- they don't walk                     they didn't walk
- ------------- USED_TO -------------
- I used to not walk
- you used to not walk
- he used to not walk
- we used to not walk
- they used to not walk
+ don't I walk                        didn't I walk
+ don't you walk                      didn't you walk
+ doesn't he walk                     didn't he walk
+ don't we walk                       didn't we walk
+ don't they walk                     didn't they walk
+ ------------ PAST_PROG ------------ ------------- PERFECT -------------
+ wasn't I walking                    haven't I walked
+ weren't you walking                 haven't you walked
+ wasn't he walking                   hasn't he walked
+ weren't we walking                  haven't we walked
+ weren't they walking                haven't they walked
+ ---------- PAST_PERFECT ----------- ---------- PERFECT_PROG -----------
+ hadn't I walked                     haven't I been walking
+ hadn't you walked                   haven't you been walking
+ hadn't he walked                    hasn't he been walking
+ hadn't we walked                    haven't we been walking
+ hadn't they walked                  haven't they been walking
+ -------- PAST_PERFECT_PROG -------- -------------- MODAL --------------
+ hadn't I been walking               shouldn't I walk
+ hadn't you been walking             shouldn't you walk
+ hadn't he been walking              shouldn't he walk
+ hadn't we been walking              shouldn't we walk
+ hadn't they been walking            shouldn't they walk
+ -------------- MODAL -------------- --------- MODAL_PERF_PROG ---------
+ shouldn't I walk                    shouldn't I have been walking
+ shouldn't you walk                  shouldn't you have been walking
+ shouldn't he walk                   shouldn't he have been walking
+ shouldn't we walk                   shouldn't we have been walking
+ shouldn't they walk                 shouldn't they have been walking
 
 
 
@@ -646,6 +706,18 @@ The negation rule above is applied before the allow_contractions rule is checked
 	allow_contractions =>1, negation=>not : "he's not walking";
 	allow_contractions =>0, negation=>not " "he is not walking";
 
+=item contraction($phrase, contract_n_t, contract_other)
+	
+	$sentance = "I did not know that you are not here";
+	contraction($sentance)       -> "I didn't know that you aren't here";
+	contraction($sentance, 0, 1) -> "I did not know that you're not here";
+	contraction($sentance, 1, 0) -> "I didn't know that you aren't here";
+
+	
+Lets you contract-ify arbitrary sentances.  The default values of contract_n_t and contract_other are both
+1, and it prefers to contract "not" before contracting anything else, as described in the "negation" rule
+above. 
+
 
 =item conjugations()
   
@@ -659,6 +731,7 @@ None by default. You can export the following functions and variables:
 
 	conjugate
         conjugations
+	contraction
 	@tenses
 	@pronouns
 

@@ -5,4 +5,5 @@ MANIFEST
 META.yml			# Will be created by "make dist"
 README
 t/testconj.t
+t/testcontract.t
 
