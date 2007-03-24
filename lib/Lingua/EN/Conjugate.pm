@@ -27,7 +27,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.27';
+$VERSION = '0.28';
 @pron    = qw(I you we he she it they);
 
 @tenses = qw (
@@ -171,18 +171,21 @@ sub conjugate {
 
     my %params = @_;
 
-    print Dumper \%params;
+    #print Dumper \%params;
 
-    our $inf =
+    our ($inf, $modal, $passive, $allow_contractions, $question, $negation);
+    our ($part, $past, $gerund, $s_form);
+
+    $inf =
       defined $params{verb} ? $params{verb} : warn "must define a verb!!\n",
       return undef;
     $inf =~ s/^ *| *$//g;
     $inf =~ s/  *//g;
 
-    our $modal = defined $params{modal} ? $params{modal} : 'will';
-    our $passive = defined $params{passive} ? $params{passive} : undef;
+    $modal = defined $params{modal} ? $params{modal} : 'will';
+    $passive = defined $params{passive} ? $params{passive} : undef;
 
-    our $allow_contractions = defined $params{allow_contractions}? $params{allow_contractions}: undef;
+    $allow_contractions = defined $params{allow_contractions}? $params{allow_contractions}: undef;
 
     my @modals   = qw(may might must should could would will can shall);
 
@@ -191,10 +194,10 @@ sub conjugate {
         return 0;
     }
 
-    our $question = defined $params{question} ? $params{question} : 0;
-    our $negation = defined $params{negation} ? $params{negation} : undef;
+    $question = defined $params{question} ? $params{question} : 0;
+    $negation = defined $params{negation} ? $params{negation} : undef;
 
-    our ( $part, $past, $gerund, $s_form ) = init_verb($inf);
+    ( $part, $past, $gerund, $s_form ) = init_verb($inf);
 
     if (   ref $params{pronoun}
         or ref $params{tense}
@@ -241,7 +244,7 @@ sub conjugate {
 
         my ( $tense, $pronoun ) = @_;
 
-        # special case...
+        # special cases...
         if ( $tense eq 'present' and defined $negation ) {
             $tense = 'present_do';
         }
@@ -293,6 +296,7 @@ sub conjugate {
 		$pattern =~ s/\b(we|they|you) are\b/$1're/i;
 		$pattern =~ s/\bI am\b/I'm/i;
 		$pattern =~ s/\b(I|we|they|you) have\b/$1've/i;
+		$pattern =~ s/\b(he|she) has\b/$1's/i;
 	}
 
         $pattern =~ s/GERUND/$gerund/;
@@ -314,7 +318,6 @@ sub conjugate {
             $pattern =~ s/INF/$inf/;
 
         }
-
 
         $pattern =~ s/  */ /g;
         return $pattern;
@@ -427,9 +430,8 @@ sub init_verb {
        # and if the stress is not on the penultimate syllable, then double
        # the final consonant.
        #
-       # works for stop, sit, spit, refer, begin, admit, etc.
-       # but breaks for visit, happen, enter, etc.
-       # so we use our stop list
+       # The stop list (stored in %no_double) is a list of words ending in CVC, with the stress
+       # on the penultimate syllable such as visit, happen, enter, etc.
 
         $stem =~ s/(\w)$/$1$1/ unless $no_double{$stem};
 
@@ -464,7 +466,7 @@ sub init_verb {
     return ( $part, $past, $gerund, $s_form );
 }
 
-"true";
+1;
 
 =head1 NAME
 
