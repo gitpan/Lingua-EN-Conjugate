@@ -7,14 +7,15 @@ require Exporter;
 
 @EXPORT_OK = qw(
   conjugate
+  conjugate2
   conjugations
   @tenses
   @pron
 );
 
-#use warnings;
-#use strict;
-#use diagnostics;
+use warnings;
+use strict;
+use diagnostics;
 
 use vars qw(
   $VERSION
@@ -23,13 +24,15 @@ use vars qw(
   @tenses
   %conj
   %no_double
+  %tense_patterns
 
 );
 
-$VERSION = '0.23';
+$VERSION = '0.24';
 @pron    = qw(I you we he she it they);
 
-@tenses = qw(	present
+@tenses = qw(
+  present
   present_prog
   past
   past_prog
@@ -43,6 +46,36 @@ $VERSION = '0.23';
   modal_perf_prog
   conjunctive_present
   imperative
+  present_do
+  past_do
+  used_to
+);
+
+%tense_patterns = (
+
+    #	TENSE		STATEMENT			QUESTION
+    present      => [ '@ PRESENT',           'DO(#) @ (*) INF' ],
+    present_do   => [ '@ DO(#) (*) INF',     'DO(#) @ (*) INF' ],
+    present_prog => [ '@ BE(#) (*) GERUND',  'BE(#) @ (*) GERUND' ],
+    past         => [ '@ PAST',              'did(#) @ (*) INF' ],
+    past_do      => [ '@ did(#) (*) INF',    'did(#) @ (*) INF' ],
+    past_prog    => [ '@ WAS(#) (*) GERUND', 'WAS(#) @ (*) GERUND' ],
+    used_to      => [ '@ used to * INF',     'N/A' ],
+    perfect      => [ '@ HAVE(#) (*) PART',  'HAVE(#) @ (*) PART' ],
+    past_perfect => [ '@ had(#) (*) PART',   'had(#) @ (*) PART' ],
+    perfect_prog =>
+      [ '@ HAVE(#) (*) been GERUND', 'HAVE(#) @ (*) been GERUND' ],
+    past_perfect_prog =>
+      [ '@ had(#) (*) been GERUND', 'had(#) @ (*) been GERUND' ],
+    modal      => [ '@ MODAL(#) (*) INF',       'MODAL(#) @ (*) INF' ],
+    modal_prog => [ '@ MODAL(#) (*) be GERUND', 'MODAL(#) @ (*) be GERUND' ],
+    modal_perf => [ '@ MODAL(#) (*) have PART', 'MODAL(#) @ (*) have PART' ],
+    modal_perf_prog =>
+      [ '@ MODAL(#) (*) have been GERUND', 'MODAL(#) @ (*) have been GERUND' ],
+    conjunctive_present => [ '@ * INF',    'N/A' ],
+    imperative          => [ 'IMPERATIVE', 'N/A' ]
+
+      #  				@ = pronoun, # = n't, * = not
 );
 
 while (<DATA>) {
@@ -58,6 +91,7 @@ while (<DATA>) {
     ( $verb, $simp, $part ) =
       map { s/^\s*|\s*$//g; $_ } ( $verb, $simp, $part );
     $irreg{$verb} = { past => $simp, part => $part };
+
     #print "$verb, $simp, $part\n";
 
 }
@@ -67,241 +101,6 @@ while (<DATA>) {
     $line =~ s/^ *| *$//g;
     my @nd = split / /, $line;
     $no_double{$_} = 1 for @nd;
-}
-
-
-sub conjugate {
-
-    my %params = @_;
-
-    #print Dumper \%params;
-
-    my $inf =
-      defined $params{verb} ? $params{verb} : warn "must define a verb!!\n",
-      return;
-    $inf =~ s/^ *| *$//g;
-    $inf =~ s/  *//g;
-    my $modal = defined $params{modal} ? $params{modal} : 'will';
-    my @conjs = ();
-
-    my $do;
-    $do->{helper}   = '';
-    $do->{question} = '';
-    $do->{not}      = '';
-
-    # special case for "we do.. " "you did.." "didn't they ..." and so on
-    if ( $inf =~ s/(do) ?(not)?(\??) ?(\w+)// ) {
-        $inf            = $1;
-        $do->{not}      = $2;
-        $do->{question} = $3;
-        $do->{helper}   = $4;
-
-        #print "do conjug: $inf, $do->{not}, $do->{question}, $do->{helper}\n";
-    }
-
-    my ( $part, $past, $gerund, $s_form );
-
-    my $stem = $inf;
-
-    if ( $stem =~ /[bcdfghjklmnpqrstvwxyz][aeiou][bcdfghjklmnpqrstv]$/ ) {
-
-       #if the word ends in CVC pattern (but final consonant is not w,x,y, or z)
-       # and if the stress is not on the penultimate syllable, then double
-       # the final consonant.
-       #
-       # works for stop, sit, spit, refer, begin, admit, etc.
-       # but breaks for visit, happen, enter, etc.
-
-        $stem =~ s/(\w)$/$1$1/ unless $no_double{$stem};
-
-    }
-
-    $part = $stem . 'ed';
-    $part =~ s/([bcdfghjklmnpqrstvwxyz])eed$/$1ed/;
-    $part =~ s/([bcdfghjklmnpqrstvwxyz])yed$/$1ied/;
-    $part =~ s/eed$/ed/;
-    $past = $part;
-
-    $gerund = $stem . 'ing';
-    $gerund =~ s/.([bcdfghjklmnpqrstvwxyz])eing$/$1ing/;
-    $gerund =~ s/ieing$/ying/;
-
-
-    if ($inf =~ /[ho]$/) {
-	$s_form = $inf. "es";
-    }
-    elsif ($inf =~ /[bcdfghjklmnpqrstvwxyz]y$/) {
-	$s_form = $inf ."ies";
-	$s_form =~ s/yies$/ies/;
-    }
-    else {
-	$s_form = $inf . "s";
-    }
-
-
-    if ( $inf eq 'be' ) {
-       # $gerund = 'being';
-    }
-
-    if ( defined $irreg{$inf} ) {
-        $part = $irreg{$inf}{part};
-        $past = $irreg{$inf}{past};
-    }
-
-    
-
-    print "[$inf], [$stem], [$past], [$part]\n";
-
-    my %conj = (
-
-        present => {
-            ( map { $_ => $_ . " $inf" } qw(I you we they) ),
-            ( map { $_ => $_ . " $s_form" } qw(he she it) )
-        },
-
-        present_prog => {
-            ( map { $_ => $_ . " am $gerund" } qw(I) ),
-            ( map { $_ => $_ . " are $gerund" } qw(you we they) ),
-            ( map { $_ => $_ . " is $gerund" } qw(he she it) )
-        },
-
-        past => { map { $_ => $_ . " $past" } @pron },
-
-        past_prog => {
-            ( map { $_ => $_ . " were $gerund" } qw(you we they) ),
-            ( map { $_ => $_ . " was $gerund" } qw(I he she it) )
-        },
-
-        perfect => {
-            ( map { $_ => $_ . " have $part" } qw(I you we they) ),
-            ( map { $_ => $_ . " has $part" } qw(he she it) )
-        },
-
-        past_perfect => { map { $_ => $_ . " had $part" } @pron },
-
-        perfect_prog => {
-            ( map { $_ => $_ . " have been $gerund" } qw(I you we they) ),
-            ( map { $_ => $_ . " has been $gerund" } qw(he she it) )
-        },
-
-        past_perfect_prog => { map { $_ => $_ . " had been $gerund" } @pron },
-
-        modal      => { map { $_ => $_ . " $modal $inf" } @pron },
-        modal_prog => { map { $_ => $_ . " $modal be $gerund" } @pron },
-        modal_perf => { map { $_ => $_ . " $modal have $part" } @pron },
-        modal_perf_prog =>
-          { map { $_ => $_ . " $modal have been $gerund" } @pron },
-        conjunctive_present => { map { $_ => $_ . " $inf" } @pron },
-        imperative => { "you" => "$inf", "we" => "let's $inf" },
-
-        used_to => { map { $_ => $_ . " used to $inf" } @pron },
-
-    );
-
-    if ( $inf eq 'be' ) {
-
-        $conj{present} = {
-            ( map { $_ => $_ . " am" } qw(I) ),
-            ( map { $_ => $_ . " are" } qw(you we they) ),
-            ( map { $_ => $_ . " is" } qw(he she it) )
-        };
-        $conj{past} = {
-            ( map { $_ => $_ . " were" } qw(you we they) ),
-            ( map { $_ => $_ . " was" } qw(I he she it) )
-        };
-
-    }
-
-    if ( $inf eq 'have' ) {
-        $conj{present} = {
-            ( map { $_ => $_ . " have" } qw(I you we they) ),
-            ( map { $_ => $_ . " has" } qw(he she it) )
-        };
-
-
-    }
-
-    if ( $inf eq 'do' and $do->{helper} ne '' ) {
-        delete $conj{$_}
-          for
-          qw(modal_perf perfect perfect_prog modal_prog present_prog past_perfect conjunctive_present used_to
-          past_perfect_prog past_prog modal_perf_prog modal);
-        for my $t ( keys %conj ) {
-
-            #print "*****" . uc($t) . "******\n";
-            for my $p ( keys %{ $conj{$t} } ) {
-                next unless defined $conj{$t}{$p};
-                my $c = $conj{$t}{$p};
-                $c =~ s/  +/ /g;
-
-                #print "before changing word order for do:\n$c\n";
-                my ( $pron, $verb, $rest ) =
-                  $c =~ /([\w']+)?\s*(do|does|did)\b\s*(\b.*)?/;
-		$pron = '' unless defined $pron;
-                $verb = '' unless defined $verb;
-                $rest   = '' unless defined $rest;
-		#print "pron = $pron, verb = $verb, rest = $rest\n";
-
-                if ( defined $do->{not} and $do->{not} eq 'not' ) {
-                    $verb .= "n't";
-                }
-
-                if ( $do->{question} eq '?' ) {
-                    ( $pron, $verb ) = ( $verb, $pron );
-                }
-                $c = "$pron $verb";
-
-                $c .= " $rest $do->{helper}";
-                $c =~ s/  +/ /g;
-		$c =~ s/^ *| *$//g;
-
-                #print "after changing word order for do:\n$c\n";
-                $conj{$t}{$p} = $c;
-            }
-        }
-    }
-
-    if (   ref $params{pronoun}
-        or ref $params{tense}
-        or !defined $params{pronoun}
-        or !defined $params{tense} )
-    {
-        my $ret = {};
-        my @t =
-            ref $params{tense}     ? @{ $params{tense} }
-          : defined $params{tense} ? $params{tense}
-          :                          @tenses;
-
-        for my $t (@t) {
-
-            my @p =
-              ref $params{pronoun} ? grep { defined $conj{$t}{$_} }
-              @{ $params{pronoun} }
-              : defined $params{pronoun} ? $params{pronoun}
-              :                            grep { defined $conj{$t}{$_} } @pron;
-
-            for my $p (@p) {
-                next unless defined $conj{$t}{$p};
-                $ret->{$t}{$p} = $conj{$t}{$p};
-            }
-        }
-
-        if (wantarray) {
-            my @return = ();
-            for my $t ( keys %{$ret} ) {
-                for my $p ( keys %{ $ret->{$t} } ) {
-
-                    push @return, $ret->{$t}{$p};
-                }
-            }
-            return @return;
-        }
-        else { return $ret }
-
-    }
-
-    return $conj{ $params{tense} }{ $params{pronoun} };
-
 }
 
 sub conjugations {
@@ -351,6 +150,269 @@ sub conjugations {
     }
 }
 
+sub conjugate {
+
+    my %params = @_;
+
+    print Dumper \%params;
+
+    our $inf =
+      defined $params{verb} ? $params{verb} : warn "must define a verb!!\n",
+      return undef;
+    $inf =~ s/^ *| *$//g;
+    $inf =~ s/  *//g;
+
+    our $modal = defined $params{modal} ? $params{modal} : 'will';
+
+    my @modals   = qw(may might must should could would will can shall);
+    my $is_modal = 0;
+    for (@modals) { $is_modal++ if $modal =~ /^$_$/i; }
+    if ( $is_modal == 0 ) {
+        warn "$modal is not a modal verb!!\n";
+        return 0;
+    }
+
+    our $question = defined $params{question} ? $params{question} : 0;
+    our $negation = defined $params{negation} ? $params{negation} : undef;
+
+    our ( $part, $past, $gerund, $s_form ) = init_verb($inf);
+
+    if (   ref $params{pronoun}
+        or ref $params{tense}
+        or !defined $params{pronoun}
+        or !defined $params{tense} )
+    {
+        my $ret = {};
+        my @t =
+            ref $params{tense}     ? @{ $params{tense} }
+          : defined $params{tense} ? $params{tense}
+          :                          @tenses;
+
+        for my $t (@t) {
+
+            my @p =
+              ref $params{pronoun} ? grep { defined _conj( $t, $_ ) }
+              @{ $params{pronoun} }
+              : defined $params{pronoun} ? $params{pronoun}
+              :   grep { defined _conj( $t, $_ ) } @pron;
+
+            for my $p (@p) {
+                next unless defined _conj( $t, $p );
+                $ret->{$t}{$p} = _conj( $t, $p );
+            }
+        }
+
+        if (wantarray) {
+            my @return = ();
+            for my $t ( keys %{$ret} ) {
+                for my $p ( keys %{ $ret->{$t} } ) {
+
+                    push @return, $ret->{$t}{$p};
+                }
+            }
+            return @return;
+        }
+        else { return $ret }
+
+    }
+
+    return _conj( $params{tense}, $params{pronoun} );
+
+    sub _conj {
+
+        my ( $tense, $pronoun ) = @_;
+
+        # special case...
+        if ( $tense eq 'present' and defined $negation ) {
+            $tense = 'present_do';
+        }
+        if ( $tense eq 'past' and defined $negation ) { $tense = 'past_do'; }
+
+        my $pattern = $tense_patterns{$tense}[$question] or return undef;
+
+        if ( $pattern eq 'N/A' ) { return undef; }
+        $pattern =~ s/DO/DO($pronoun)/e;
+        $pattern =~ s/WAS/WAS($pronoun)/e;
+        $pattern =~ s/HAVE/HAVE($pronoun)/e;
+        $pattern =~ s/MODAL/$modal/;
+        $pattern =~ s/BE/BE($pronoun)/e;
+
+        if ($negation) {
+            if ( $pattern =~ /\(\*\)/ and $pattern =~ /([a-zA-Z]*)\(\#\)/ ) {
+                my $did = $1;
+                if ( $negation =~ /n_t/i and my $didn_t = N_T($did) ) {
+                    $pattern =~ s/\w*\(\#\) */$didn_t /;
+                    $pattern =~ s/\(\*\) */ /;
+                }
+                else {
+                    $pattern =~ s/ *\(\#\) */ /;
+                    $pattern =~ s/ *\(\*\) */ not /;
+                }
+            }
+            else {
+                $pattern =~ s/\* */not /;
+            }
+        }
+        else {
+            $pattern =~ s/\(\#\) */ /;
+            $pattern =~ s/\(?\*\)? */ /;
+        }
+
+        $pattern =~ s/GERUND/$gerund/;
+        $pattern =~ s/PART/$part/;
+        if ( $pattern =~ /PRESENT/ ) {
+            my $p = PRESENT( $inf, $s_form, $pronoun ) or return undef;
+            $pattern =~ s/PRESENT/$p/;
+        }
+        elsif ( $pattern =~ /IMPERATIVE/ ) {
+            my $i = IMPERATIVE( $inf, $negation, $pronoun ) or return undef;
+            $pattern =~ s/IMPERATIVE/$i/;
+        }
+        elsif ( $pattern =~ /PAST/ ) {
+            return undef unless defined $past;
+            $pattern =~ s/PAST/$past/;
+        }
+        elsif ( $pattern =~ /INF/ ) {
+            return undef unless defined $inf;
+            $pattern =~ s/INF/$inf/;
+
+        }
+        $pattern =~ s/\@/$pronoun/;
+
+        $pattern =~ s/  */ /g;
+        return $pattern;
+
+    }
+}
+
+sub PRESENT {
+    my $inf     = shift;
+    my $s_form  = shift;
+    my $pronoun = shift;
+
+    if ( $inf =~ /be/i )   { return BE($pronoun); }
+    if ( $inf =~ /have/i ) { return HAVE($pronoun); }
+    for (qw( he she it )) { return $s_form if $pronoun eq $_ }
+    return $inf;
+
+}
+
+sub IMPERATIVE {
+    my $inf      = shift;
+    my $negation = shift;
+    my $pronoun  = shift;
+
+    if ( $pronoun =~ /we/i ) {
+        if ( defined $negation ) {
+            return "let's not $inf";
+        }
+        else {
+            return "let's $inf";
+        }
+    }
+    elsif ( $pronoun =~ /you/i ) {
+        if ( $negation =~ /n_t/i ) {
+            return "don't $inf";
+        }
+        elsif ( $negation =~ /not/i ) {
+            return "do not $inf";
+        }
+        else {
+            return "$inf";
+        }
+    }
+    else {
+        return undef;
+    }
+}
+
+sub BE {
+    my $pronoun = shift;
+    if ( $pronoun eq 'I' ) { return 'am' }
+    for (qw( he she it )) { return 'is' if $pronoun eq $_ }
+    return 'are';
+}
+
+sub WAS {
+    my $pronoun = shift;
+    for (qw( I he she it )) { return 'was' if $pronoun eq $_ }
+    return 'were';
+}
+
+sub HAVE {
+    my $pronoun = shift;
+    for (qw( he she it )) { return 'has' if $pronoun eq $_ }
+    return 'have';
+}
+
+sub DO {
+    my $pronoun = shift;
+    for (qw( he she it )) { return 'does' if $pronoun eq $_ }
+    return 'do';
+}
+
+sub N_T {
+
+    #add contracted negation to modal verbs:
+    my $modal       = shift;
+    my @no_contract = qw(be being been am may);
+    for (@no_contract) { return undef if $modal eq $_; }
+    my %exceptions =
+      ( "will" => "won't", "can" => "can't", "shall" => "shan't" );
+    return $exceptions{$modal} if defined $exceptions{$modal};
+    return $modal . "n't";
+}
+
+sub init_verb {
+    my $inf = shift;
+
+    my $stem = $inf;
+
+    my ($gerund, $part, $past, $s_form);
+
+    if ( $stem =~ /[bcdfghjklmnpqrstvwxyz][aeiou][bcdfghjklmnpqrstv]$/ ) {
+
+       #if the word ends in CVC pattern (but final consonant is not w,x,y, or z)
+       # and if the stress is not on the penultimate syllable, then double
+       # the final consonant.
+       #
+       # works for stop, sit, spit, refer, begin, admit, etc.
+       # but breaks for visit, happen, enter, etc.
+       # so we use our stop list
+
+        $stem =~ s/(\w)$/$1$1/ unless $no_double{$stem};
+
+    }
+
+    $part = $stem . 'ed';
+    $part =~ s/([bcdfghjklmnpqrstvwxyz])eed$/$1ed/;
+    $part =~ s/([bcdfghjklmnpqrstvwxyz])yed$/$1ied/;
+    $part =~ s/eed$/ed/;
+    $past = $part;
+
+    $gerund = $stem . 'ing';
+    $gerund =~ s/.([bcdfghjklmnpqrstvwxyz])eing$/$1ing/;
+    $gerund =~ s/ieing$/ying/;
+
+    if ( $inf =~ /[ho]$/ ) {
+        $s_form = $inf . "es";
+    }
+    elsif ( $inf =~ /[bcdfghjklmnpqrstvwxyz]y$/ ) {
+        $s_form = $inf . "ies";
+        $s_form =~ s/yies$/ies/;
+    }
+    else {
+        $s_form = $inf . "s";
+    }
+
+    if ( defined $irreg{$inf} ) {
+        $part = $irreg{$inf}{part};
+        $past = $irreg{$inf}{past};
+    }
+
+    return ( $part, $past, $gerund, $s_form );
+}
+
 "true";
 
 =head1 NAME
@@ -359,8 +421,8 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 
 =head1 SYNOPSIS
 
-use Lingua::EN::Conjugate qw( conjugate conjugations );
-use Data::Dumper;
+	use Lingua::EN::Conjugate qw( conjugate conjugations );
+	use Data::Dumper;
 	
 
 	# scalar context with tense and pronoun defined as scalars, 
@@ -386,13 +448,16 @@ use Data::Dumper;
 
 	print conjugations( 'verb'=>'walk' );
 
+	#  conjugations in question form, e.g. "did we walk?"
+	pring conjugate('verb'=>'
+
 
 
 =head1 DESCRIPTION
 
 This module conjugates English verbs.
 
-Thanks to Susan Jones for the list of irregular verbs and an explanation of English verb tenses: http://www2.gsu.edu/~wwwesl/egw/grlists.htm.
+Thanks to Susan Jones for the list of irregular verbs and an explanation of English verb tenses L<http://www2.gsu.edu/~wwwesl/egw/grlists.htm>.
 
 	present         	-> we drive
 	present_prog    	-> we are driving
@@ -409,7 +474,7 @@ Thanks to Susan Jones for the list of irregular verbs and an explanation of Engl
 	conjunctive_present 	-> we drive
 	imperative      	-> let's drive
 
-See http://www.englishclub.com/grammar/verbs-modals_can.htm. 
+See L<http://www.englishclub.com/grammar/verbs-modals_can.htm> for an explanation of modal verbs. 
 
 =over
 
@@ -462,7 +527,17 @@ Russ Graham, russgraham@gmail.com
 
 =head1 SEE ALSO
 
-perl(1).
+=over
+
+=item
+
+L<Lingua::IT::Conjugate>
+
+=item
+
+L<Lingua::PT::Conjugate>
+
+=back
 
 =cut
 

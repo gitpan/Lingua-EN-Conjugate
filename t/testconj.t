@@ -10,9 +10,9 @@ use Data::Dumper;
 	ok(conjugate( 'verb' => 'have', 'tense' => 'present', 'pronoun' => 'he' ), 'he has');
 	ok(conjugate('verb'=>'study', 'pronoun'=>'she', 'tense'=>'present'), 'she studies');
 	ok(conjugate( 'verb' => 'have', 'tense' => 'past', 'pronoun' => 'I' ), 'I had');
-	ok(conjugate('verb'=>'do not invite', 'pronoun'=>'I', 'tense'=>'past'), 'I didn\'t invite');
-	ok(conjugate('verb'=>'do not go', 'pronoun'=>'you', 'tense'=>'imperative'), 'don\'t go');
-	ok(conjugate('verb'=>'do not? see', 'pronoun'=>'she', 'tense'=>'present'), 'doesn\'t she see');
+	ok(conjugate('verb'=>'invite', 'pronoun'=>'I', 'tense'=>'past_do', 'negation'=>'n_t'), 'I didn\'t invite');
+	ok(conjugate('verb'=>'go', 'pronoun'=>'you', 'tense'=>'imperative', 'negation'=>'n_t'), 'don\'t go');
+	ok(conjugate('verb'=>'see', 'pronoun'=>'she', 'tense'=>'present', 'negation'=>'n_t', 'question'=>1), 'doesn\'t she see');
 
 	# scalar context with tense and pronoun defined as scalars, 
 	#returns a scalar
@@ -26,7 +26,7 @@ use Data::Dumper;
 	#as array refs, returns a hashref
 	my $go = conjugate( 'verb'=>'go', 
 				'tense'=>[qw(past_prog modal)], 
-				'modal'=>'used to' ) ;       	
+				'modal'=>'might' ) ;       	
 	ok(ref $go, 'HASH');
 	ok($go->{past_prog}{I}, 'I was going');
 
@@ -42,8 +42,8 @@ use Data::Dumper;
 	ok(conjugate('verb'=>'visit', 'pronoun'=>'I', 'tense'=>'past'), 'I visited');
 	ok(conjugate('verb'=>'refer', 'pronoun'=>'I', 'tense'=>'past'), 'I referred');
 	ok(conjugate('verb'=>'begin', 'pronoun'=>'I', 'tense'=>'past'), 'I began');
-	ok(conjugate('verb'=>'do? go', 'pronoun'=>'you', 'tense'=>'past'), 'did you go');
-	ok(conjugate('verb'=>'do not happen', 'pronoun'=>'it', 'tense'=>'past'), 'it didn\'t happen');
+	ok(conjugate('verb'=>'go', 'pronoun'=>'you', 'tense'=>'past', 'question'=>1), 'did you go');
+	ok(conjugate('verb'=>'happen', 'pronoun'=>'it', 'tense'=>'past', 'negation'=>'n_t'), 'it didn\'t happen');
 	ok(conjugate('verb'=>'prefer', 'pronoun'=>'they', 'tense'=>'modal_perf', 'modal'=>'would'), 'they would have preferred');
 
 
