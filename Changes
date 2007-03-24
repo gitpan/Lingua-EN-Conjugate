@@ -1,5 +1,23 @@
 Revision history for Lingua-EN-Conjugate
 
-0.01    31 October 2006
-        First version, getting it to run with Module::Builder
+
+0.1
+
+Original version -- no guarantees.
+
+0.2
+	
+Added a stop-list for words that shouldn't have the final consonant doubled when adding
+-ed or -ing.
+
+0.21
+
+nothin much, just fixing the documentation...
+
+0.24
+
+lots of changes under the hood.  Added the ability to form questions and negations, since 
+these are harder to do with conjugated verbs; you've got to switch the word order around 
+and so forth.  Also added some new "tenses" ... present_do, past_do, and used_to... these
+don't seem to be officially recognized tenses, but they're very commonly used!
 

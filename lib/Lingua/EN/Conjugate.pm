@@ -28,28 +28,10 @@ use vars qw(
 
 );
 
-$VERSION = '0.24';
+$VERSION = '0.25';
 @pron    = qw(I you we he she it they);
 
-@tenses = qw(
-  present
-  present_prog
-  past
-  past_prog
-  perfect
-  past_perfect
-  perfect_prog
-  past_perfect_prog
-  modal
-  modal_prog
-  modal_perf
-  modal_perf_prog
-  conjunctive_present
-  imperative
-  present_do
-  past_do
-  used_to
-);
+
 
 %tense_patterns = (
 
@@ -63,20 +45,21 @@ $VERSION = '0.24';
     used_to      => [ '@ used to * INF',     'N/A' ],
     perfect      => [ '@ HAVE(#) (*) PART',  'HAVE(#) @ (*) PART' ],
     past_perfect => [ '@ had(#) (*) PART',   'had(#) @ (*) PART' ],
-    perfect_prog =>
-      [ '@ HAVE(#) (*) been GERUND', 'HAVE(#) @ (*) been GERUND' ],
+    perfect_prog => [ '@ HAVE(#) (*) been GERUND', 'HAVE(#) @ (*) been GERUND' ],
     past_perfect_prog =>
-      [ '@ had(#) (*) been GERUND', 'had(#) @ (*) been GERUND' ],
-    modal      => [ '@ MODAL(#) (*) INF',       'MODAL(#) @ (*) INF' ],
-    modal_prog => [ '@ MODAL(#) (*) be GERUND', 'MODAL(#) @ (*) be GERUND' ],
-    modal_perf => [ '@ MODAL(#) (*) have PART', 'MODAL(#) @ (*) have PART' ],
+                    [ '@ had(#) (*) been GERUND', 'had(#) @ (*) been GERUND' ],
+    modal      =>   [ '@ MODAL(#) (*) INF',       'MODAL(#) @ (*) INF' ],
+    modal_prog =>   [ '@ MODAL(#) (*) be GERUND', 'MODAL(#) @ (*) be GERUND' ],
+    modal_perf =>   [ '@ MODAL(#) (*) have PART', 'MODAL(#) @ (*) have PART' ],
     modal_perf_prog =>
-      [ '@ MODAL(#) (*) have been GERUND', 'MODAL(#) @ (*) have been GERUND' ],
+                    [ '@ MODAL(#) (*) have been GERUND', 'MODAL(#) @ (*) have been GERUND' ],
     conjunctive_present => [ '@ * INF',    'N/A' ],
     imperative          => [ 'IMPERATIVE', 'N/A' ]
 
       #  				@ = pronoun, # = n't, * = not
 );
+
+@tenses = keys %tense_patterns;
 
 while (<DATA>) {
     chomp;
@@ -226,7 +209,9 @@ sub conjugate {
         if ( $tense eq 'present' and defined $negation ) {
             $tense = 'present_do';
         }
-        if ( $tense eq 'past' and defined $negation ) { $tense = 'past_do'; }
+        if ( $tense eq 'past' and defined $negation ) { 
+	    $tense = 'past_do'; 
+	}
 
         my $pattern = $tense_patterns{$tense}[$question] or return undef;
 
@@ -422,34 +407,84 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 =head1 SYNOPSIS
 
 	use Lingua::EN::Conjugate qw( conjugate conjugations );
-	use Data::Dumper;
 	
 
-	# scalar context with tense and pronoun defined as scalars, 
-	#returns a scalar
 	my $walk = conjugate( 'verb'=>'walk', 
 				'tense'=>'perfect_prog', 
 				'pronoun'=>'he' );  
-	print $walk . "\n";
+	print $walk . "\n";  
+				# he was walking
 
-	# scalar context with tense and pronoun undefined or defined 
-	#as array refs, returns a hashref
+
 	my $go = conjugate( 'verb'=>'go', 
 				'tense'=>[qw(past modal_perf)], 
-				'modal'=>'might not' ) ;       	
-	print Dumper($go);
+				'modal'=>'might' ) ;       	
 
-	# array context, returns an array of conjugated forms
+
 	my @be = conjugate( 'verb'=>'be', 
 				'pronoun'=>[qw(I we)], 
 				'tense'=>'past_prog' );
 
-	print join("\n", @be);
 
-	print conjugations( 'verb'=>'walk' );
+	#pretty printed table of conjugations
 
-	#  conjugations in question form, e.g. "did we walk?"
-	pring conjugate('verb'=>'
+	print conjugations( 'verb'=>'walk', 'negation'=>'n_t' );
+ ------------- PRESENT ------------- ---------- PRESENT_PROG -----------
+ I don't walk                        I am not walking
+ you don't walk                      you aren't walking
+ he doesn't walk                     he isn't walking
+ we don't walk                       we aren't walking
+ they don't walk                     they aren't walking
+ -------------- PAST --------------- ------------ PAST_PROG ------------
+ I didn't walk                       I wasn't walking
+ you didn't walk                     you weren't walking
+ he didn't walk                      he wasn't walking
+ we didn't walk                      we weren't walking
+ they didn't walk                    they weren't walking
+ ------------- PERFECT ------------- ---------- PAST_PERFECT -----------
+ I haven't walked                    I hadn't walked
+ you haven't walked                  you hadn't walked
+ he hasn't walked                    he hadn't walked
+ we haven't walked                   we hadn't walked
+ they haven't walked                 they hadn't walked
+ ---------- PERFECT_PROG ----------- -------- PAST_PERFECT_PROG --------
+ I haven't been walking              I hadn't been walking
+ you haven't been walking            you hadn't been walking
+ he hasn't been walking              he hadn't been walking
+ we haven't been walking             we hadn't been walking
+ they haven't been walking           they hadn't been walking
+ -------------- MODAL -------------- ----------- MODAL_PROG ------------
+ I won't walk                        I won't be walking
+ you won't walk                      you won't be walking
+ he won't walk                       he won't be walking
+ we won't walk                       we won't be walking
+ they won't walk                     they won't be walking
+ ----------- MODAL_PERF ------------ --------- MODAL_PERF_PROG ---------
+ I won't have walked                 I won't have been walking
+ you won't have walked               you won't have been walking
+ he won't have walked                he won't have been walking
+ we won't have walked                we won't have been walking
+ they won't have walked              they won't have been walking
+ ------- CONJUNCTIVE_PRESENT ------- ----------- IMPERATIVE ------------
+ I not walk
+ you not walk                        don't walk
+ he not walk
+ we not walk                         let's not walk
+ they not walk
+ ----------- PRESENT_DO ------------ ------------- PAST_DO -------------
+ I don't walk                        I didn't walk
+ you don't walk                      you didn't walk
+ he doesn't walk                     he didn't walk
+ we don't walk                       we didn't walk
+ they don't walk                     they didn't walk
+ ------------- USED_TO -------------
+ I used to not walk
+ you used to not walk
+ he used to not walk
+ we used to not walk
+ they used to not walk
+
+
 
 
 
@@ -459,30 +494,58 @@ This module conjugates English verbs.
 
 Thanks to Susan Jones for the list of irregular verbs and an explanation of English verb tenses L<http://www2.gsu.edu/~wwwesl/egw/grlists.htm>.
 
-	present         	-> we drive
-	present_prog    	-> we are driving
-	past           	 	-> we drove
-	past_prog       	-> we were driving
-	perfect         	-> we have driven
-	past_perfect    	-> we had driven
-	perfect_prog    	-> we have been driving
-	past_perfect_prog 	-> we had been driving
-	modal           	-> we will drive
-	modal_prog      	-> we will be driving
-	modal_perf      	-> we will have driven
-	modal_perf_prog 	-> we will have been driving
-	conjunctive_present 	-> we drive
-	imperative      	-> let's drive
-
-See L<http://www.englishclub.com/grammar/verbs-modals_can.htm> for an explanation of modal verbs. 
-
 =over
 
-=item conjugate()
-
-  this conjugates a verb.
+=item conjugate('verb'=> ... , 'tense'=> ... , 'pronoun'=> ... , 'question'=> $q, 'negation => $n)
 
 
+In scalar context with tense and pronoun defined as scalars, only one conjugation is returned.
+
+In scalar context with tense and pronoun undefined or defined as array refs, a hashref keyed by tense and pronoun is returned.
+
+In array context, it returns an array of conjugated forms ordered by tense, then pronoun.
+
+
+=item verb
+
+'verb'=>'coagulate'
+
+=item tense
+
+ 'tense'=>'past'
+ 'tense'=>['modal_perf', 'used_to']
+
+If no 'tense' argument is supplied, all applicable tenses are returned.  
+
+=item pronoun
+
+ 'pronoun'=>'he'
+ 'pronoun'=>[qw(I we you)]
+
+If no 'pronoun' argument is supplied, all applicable pronouns are returned.
+
+=item question
+
+ 'question' => 1
+ 'question' => 0  (default)
+
+In case you're playing Jeapordy
+
+=item negation
+
+ 'negation'=> 'not'
+ 'negation'=> 'n_t'
+ 'negation'=> undef  (default)
+
+Changes "do" to "do not" or "don't" depending on which value you request.
+For words where you can't use "n't" (like "am") or where it feels clumsy or antique (like "may"), 
+this will substitute "not" for "n_t" as appropriate. 
+
+=item modal
+
+ 'modal' => one of: may, might, must, should, could, would, will (default), can, shall.
+
+L<http://www.kyrene.k12.az.us/schools/brisas/sunda/verb/1help.htm> 
 
 =item conjugations()
   
@@ -495,30 +558,11 @@ See L<http://www.englishclub.com/grammar/verbs-modals_can.htm> for an explanatio
 None by default. You can export the following functions and variables:
 
 	conjugate
+        conjugations
 	@tenses
 	@pronouns
 
 =head1 BUGS
-
-
-=head1 HISTORY
-
-=over 4
-
-=item 0.1
-
-Original version -- no guarantees.
-
-=item 0.2
-	
-Added a stop-list for words that shouldn't have the final consonant doubled when adding
--ed or -ing.
-
-=item 0.21
-
-nothin much, just fixing the documentation...
-
-=back
 
 
 =head1 AUTHOR
