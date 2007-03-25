@@ -28,12 +28,12 @@ use vars qw(
 
 );
 
-$VERSION = '0.291';
+$VERSION = '0.292';
 @pron    = qw(I you we he she it they);
 
 @tenses = qw (
-	present	present_prog
-	past	past_prog
+	present		present_prog
+	past		past_prog
 	present_do	past_do
 	past_prog	used_to
 	perfect		past_perfect
@@ -43,9 +43,10 @@ $VERSION = '0.291';
 	imperative
 );
 
-%tense_patterns = ( ACTIVE => {
-
-    #	TENSE		STATEMENT			QUESTION
+%tense_patterns = (
+ 
+	ACTIVE => {
+    #	TENSE		STATEMENT		QUESTION
     present      => [ '@ PRESENT',           	'DO @ * INF' ],
     present_do   => [ '@ DO * INF',     	'DO @ * INF' ],
     present_prog => [ '@ BE * GERUND',  	'BE @ * GERUND' ],
@@ -67,31 +68,15 @@ $VERSION = '0.291';
     imperative          => [ 'IMPERATIVE', 	'N/A' ] },
 	
 	PASSIVE => {
-
-    #	TENSE		STATEMENT			QUESTION
     present      => [ '@ BE * PART',           	'BE @ * PART' ],
-    present_do   => [ 'N/A',     		'N/A' ],
     present_prog => [ '@ BE * being PART',      'BE @ * being PART' ],
     past         => [ '@ WAS * PART',           'WAS @ * PART' ],
-    past_do      => [ 'N/A',     		'N/A' ],
     past_prog    => [ '@ WAS * being PART',     'WAS @ * being PART' ],
-    used_to      => [ '@ used to * be PART',    'N/A' ],
     perfect      => [ '@ HAVE * been PART',  	'HAVE @ * been PART' ],
     past_perfect => [ '@ had * been PART',   	'had @ * been PART' ],
-    perfect_prog => ['N/A',     		'N/A' ],
-    past_perfect_prog =>
-                    [ 'N/A',     		'N/A' ],
     modal      =>   [ '@ MODAL * be PART',      'MODAL @ * be PART' ],
-    modal_prog =>   [ 'N/A',     		'N/A' ],
-    modal_perf =>   [ '@ MODAL * have been PART', 'MODAL @ * have been PART' ],
-    modal_perf_prog =>
-                    [ 'N/A',     		'N/A' ],
-    conjunctive_present => [ 'N/A',     	'N/A' ],
-    imperative          => [ 'N/A',     	'N/A' ] 
-
-
+    modal_perf =>   [ '@ MODAL * have been PART', 'MODAL @ * have been PART' ]
 	}
-
       #  				@ = pronoun, * = not
 );
 
@@ -236,7 +221,6 @@ sub conjugate {
             return @return;
         }
         else { return $ret }
-
     }
 
     return _conj( $params{tense}, $params{pronoun} );
@@ -287,8 +271,6 @@ sub conjugate {
             $pattern =~ s/INF/$inf/;
         }
 
-        #$pattern =~ s/  */ /g;
-
         if ($negation) {
             $pattern =~ s/\*/not/;
 	    if ($negation eq 'n_t') {
@@ -303,7 +285,6 @@ sub conjugate {
 	   $pattern = contraction($pattern, 0, 1);
 	}
 
-        #$pattern =~ s/  */ /g;
         return $pattern;
 
     }
@@ -382,8 +363,6 @@ sub DO {
     return 'do';
 }
 
-
-
 }
 
 sub contraction {
@@ -394,14 +373,13 @@ sub contraction {
 	if (scalar @_ > 1) { $contract_n_t = $_[1]; }
 	if (scalar @_ > 2) { $contract_other = $_[2]; }
 
-		my @modal = qw(may might must be being been am are is was were do does did should could would have has had will can shall);
-		my @pronoun = qw(I you he she it we they);
-		
-		my $modal_re = '\b(?:' . join("|", @modal) . ')';
-		$modal_re = qr($modal_re);
-
-		my $pronoun_re = '\b(?:' . join("|", @pronoun) . ')\b';
-		$pronoun_re = qr($pronoun_re);
+	my @modal = qw(may might must be being been am are is was were do does did should could would have has had will can shall);
+	my @pronoun = qw(I you he she it we they);
+	
+	my $modal_re = '\b(?:' . join("|", @modal) . ')';
+	$modal_re = qr($modal_re);
+	my $pronoun_re = '\b(?:' . join("|", @pronoun) . ')\b';
+	$pronoun_re = qr($pronoun_re);
 
 	if ($contract_n_t) {
 
@@ -430,13 +408,7 @@ sub contraction {
 			$verb_phrase = $new_phrase;
 		}
 	}
-
-	#my @modal = qw(may might must be being been am are is was were do does did should could would have has had will can shall);
-
 	if ($contract_other) {
-
-
-
 		while ($verb_phrase =~ /(\b([\w']*(?: not)?) ?($pronoun_re|$modal_re|let) ($modal_re|us)\b)/g) {
 			#print "1 -> $1\n\t, 2-> $2, 3->$3, 4->$4\n";
 			my $orig_phrase = $1;
@@ -449,7 +421,6 @@ sub contraction {
 			# nobody ever says "could I've been walking?", they say "could I have been walking?".
 
 			next if $w1 =~ /$modal_re/;
-			
 		
 			$_phrase =~ s/\blet us\b/let's/ig;
 			$_phrase =~ s/\b(she|he|it|I|we|they|you) would\b/$1'd/ig;
@@ -518,8 +489,8 @@ sub init_verb {
         $s_form = $inf . "es";
     }
     elsif ( $inf =~ /[bcdfghjklmnpqrstvwxyz]y$/ ) {
-        $s_form = $inf . "ies";
-        $s_form =~ s/yies$/ies/;
+	$s_form = $inf;
+        $s_form =~ s/y$/ies/;
     }
     else {
         $s_form = $inf . "s";
@@ -573,8 +544,7 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 				'question'=>1, 
 				'allow_contractions'=>1, 
 				'modal'=>'should', 
-				'negation'=>'n_t',
-				'passive'=>1);
+				'negation'=>'n_t');
  ------------- PRESENT ------------- ---------- PRESENT_PROG -----------
  don't I walk                        am I not walking
  don't you walk                      aren't you walking
