@@ -1,10 +1,16 @@
 
 use Test;
 
-BEGIN { plan tests => 20 }	
+BEGIN { plan tests => 25 }	
 
 use Lingua::EN::Conjugate qw( conjugate conjugations );
 use Data::Dumper;
+
+ok(conjugate('verb'=>'be', 'tense'=>'present', 'pronoun'=>'she'), 'she is');
+ok(conjugate('verb'=>'have', 'tense'=>'present_prog', 'pronoun'=>'it'), 'it is having');
+ok(conjugate('verb'=>'do', 'tense'=>'past_prog', 'pronoun'=>'we', 'no_pronoun'=>1), 'were doing');
+ok(conjugate('verb'=>'could', 'tense'=>'past', 'pronoun'=>'I'), undef);
+ok(conjugate('verb'=>'could', 'tense'=>'present', 'pronoun'=>'I'), "I could");
 
 ok(conjugate( 'verb' => 'walk', 'tense' => 'present_prog', 'pronoun' => 'he', 'negation'=>'n_t', 'allow_contractions'=>1 ), 
 	"he isn't walking");

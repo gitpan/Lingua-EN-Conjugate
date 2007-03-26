@@ -28,3 +28,7 @@ added the "allow_contractions" option
 0.27
 
 The passive tense was added.
+
+0.29
+
+"contraction" subroutine is exported

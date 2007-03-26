@@ -1,6 +1,6 @@
 use Test;
 
-BEGIN { plan tests => 14 }	
+BEGIN { plan tests => 15 }	
 
 use Lingua::EN::Conjugate qw( contraction );
 use Data::Dumper;
@@ -48,3 +48,5 @@ ok(contraction("I could not have been walking"),
 
 ok(contraction("I could not have been walking", 0, 1), 
 	"I could not have been walking");
+
+ok(contraction("Is he not aware that she is here?"), "Isn't he aware that she's here?");

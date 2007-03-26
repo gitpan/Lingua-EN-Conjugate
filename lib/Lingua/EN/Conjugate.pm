@@ -28,17 +28,28 @@ use vars qw(
 
 );
 
-$VERSION = '0.292';
+$VERSION = '0.294';
 @pron    = qw(I you we he she it they);
+
+
+our @modal = qw(may might must be being been am are is was were do does did should could would have has had will can shall);
+
+
+
+our $modal_re = '\b(?:' . join("|", @modal) . ')';
+$modal_re = qr/$modal_re/i;
+our $pronoun_re = '\b(?:' . join("|", @pron) . ')\b';
+$pronoun_re = qr/$pronoun_re/i;
+
+
 
 @tenses = qw (
 	present		present_prog
 	past		past_prog
-	present_do	past_do
 	past_prog	used_to
 	perfect		past_perfect
 	perfect_prog	past_perfect_prog
-	modal		modal prog
+	modal		modal_prog
 	modal_perf_prog	conjunctive_present
 	imperative
 );
@@ -47,10 +58,10 @@ $VERSION = '0.292';
  
 	ACTIVE => {
     #	TENSE		STATEMENT		QUESTION
-    present      => [ '@ PRESENT',           	'DO @ * INF' ],
+    present      => [ '@ PRESENT *',           	'PRESENT @ *' ],
     present_do   => [ '@ DO * INF',     	'DO @ * INF' ],
     present_prog => [ '@ BE * GERUND',  	'BE @ * GERUND' ],
-    past         => [ '@ PAST',              	'did @ * INF' ],
+    past         => [ '@ PAST *',              	'PAST @ *' ],
     past_do      => [ '@ did * INF',    	'did @ * INF' ],
     past_prog    => [ '@ WAS * GERUND', 	'WAS @ * GERUND' ],
     used_to      => [ '@ used to * INF',     	'N/A' ],
@@ -106,62 +117,17 @@ while (<DATA>) {
     $no_double{$_} = 1 for @nd;
 }
 
-sub conjugations {
 
-    my ( $tense, $pronoun, $result, @_tenses );
-
-    my @pnouns = qw(I you he we they);
-
-    my $conjugs = conjugate(@_);
-
-    @_tenses = grep { defined $conjugs->{$_} } @tenses;
-
-    $result = "";
-    foreach ( $tense = 0 ; $tense <= $#_tenses ; $tense += 2 ) {
-        my $t1 = $_tenses[$tense];
-        my $t2 = $tense < scalar @_tenses ? $_tenses[ $tense + 1 ] : undef;
-        $result .= centered( uc( $_tenses[$tense] ),       35, "-" );
-        $result .= " ";
-        $result .= centered( uc( $_tenses[ $tense + 1 ] ), 35, "-" )
-          if defined $t2;
-        $result .= "\n";
-        for $pronoun (@pnouns) {
-            my $s1 =
-              defined $conjugs->{$t1}{$pronoun}
-              ? $conjugs->{$t1}{$pronoun}
-              : '';
-            my $s2 =
-                 defined $t2
-              && defined $conjugs->{$t2}{$pronoun}
-              ? $conjugs->{$t2}{$pronoun}
-              : '';
-            $result .= sprintf "%-35s %-35s\n", $s1, $s2;
-
-        }
-    }
-    return $result;
-
-    sub centered {
-        my ( $string, $len, $fill ) = @_;
-        $fill = " " unless defined $fill;
-        my $result = $fill x ( ( $len - length($string) ) / 2 - 1 );
-        $result .= " ";
-        $result .= $string;
-        $result .= " ";
-        $result .= $fill x ( $len - length($result) );
-        return $result;
-    }
-}
 
 sub conjugate {
 
     my %params = @_;
 
    #parameters:
-    our ($inf, $modal, $passive, $allow_contractions, $question, $negation);
+    our ($inf, $modal, $passive, $allow_contractions, $question, $negation, $no_pronoun);
 
    #forms of the verb determined by "init_verb":
-    our ($part, $past, $gerund, $s_form);
+    our ($part, $past, $gerund, $s_form,);
 
     $inf =
       defined $params{verb} ? $params{verb} : warn "must define a verb!!\n",
@@ -172,10 +138,10 @@ sub conjugate {
     $modal = defined $params{modal} ? $params{modal} : 'will';
     $passive = defined $params{passive} ? $params{passive} : undef;
     $allow_contractions = defined $params{allow_contractions}? $params{allow_contractions}: undef;
+    $no_pronoun = defined $params{no_pronoun}? $params{no_pronoun} : undef;
 
-    my @modals   = qw(may might must should could would will can shall);
 
-    unless ( match_any($modal, @modals) ) {
+    unless ( $modal =~ $modal_re ) {
         warn "$modal is not a modal verb!!\n";
         return 0;
     }
@@ -230,21 +196,33 @@ sub conjugate {
         my ( $tense, $pronoun ) = @_;
 
         # special cases...
-        if ( $tense eq 'present' and defined $negation ) {
+        if ( match_any( $inf, qw(should could would can shall will may might must))) {
+		return undef unless $tense eq 'present';
+	}
+	if ( $inf !~ $modal_re ) {
+        if ( $tense eq 'present' and (defined $negation or $question)) {
             $tense = 'present_do';
         }
-        if ( $tense eq 'past' and defined $negation ) { 
+        if ( $tense eq 'past' and (defined $negation or $question)) {
 	    $tense = 'past_do'; 
 	}
+	}
+
 	if ( $tense eq 'conjunctive_present' and defined $negation ) {
 		return undef;
+	
 	}
 
 	my $active_passive = $passive ? 'PASSIVE' : 'ACTIVE';
 
         my $pattern = $tense_patterns{$active_passive}{$tense}[$question] or return undef;
 
+	if ($no_pronoun) { 
+		$pattern =~ s/^\@ //;
+	}
+	
         $pattern =~ s/\@/$pronoun/;
+	
 
         if ( $pattern eq 'N/A' ) { return undef; }
         $pattern =~ s/DO/DO($pronoun)/e;
@@ -263,8 +241,9 @@ sub conjugate {
             $pattern =~ s/IMPERATIVE/$i/;
         }
         elsif ( $pattern =~ /PAST/ ) {
-            return undef unless defined $past;
-            $pattern =~ s/PAST/$past/;
+          
+	    my $p = $inf =~ /^be$/ ? WAS($pronoun) : $past ;
+            $pattern =~ s/PAST/$p/;
         }
         elsif ( $pattern =~ /INF/ ) {
             return undef unless defined $inf;
@@ -278,7 +257,7 @@ sub conjugate {
 	    }
         }
 	else {
-		$pattern =~ s/ \* / /;
+		$pattern =~ s/ ?\*( ?)/$1/;
 	}
 
 	if ($allow_contractions) {
@@ -302,9 +281,9 @@ sub PRESENT {
     my $s_form  = shift;
     my $pronoun = shift;
 
-    if ( $inf =~ /be/i )   { return BE($pronoun); }
-    if ( $inf =~ /have/i ) { return HAVE($pronoun); }
-    if (match_any($pronoun, qw(he she it))) { return $s_form; }
+    if ( $inf =~ /^be$/i )   { return BE($pronoun); }
+    if ( $inf =~ /^have$/i ) { return HAVE($pronoun); }
+    if (defined $s_form and match_any($pronoun, qw(he she it))) { return $s_form; }
  
     return $inf;
 }
@@ -373,13 +352,6 @@ sub contraction {
 	if (scalar @_ > 1) { $contract_n_t = $_[1]; }
 	if (scalar @_ > 2) { $contract_other = $_[2]; }
 
-	my @modal = qw(may might must be being been am are is was were do does did should could would have has had will can shall);
-	my @pronoun = qw(I you he she it we they);
-	
-	my $modal_re = '\b(?:' . join("|", @modal) . ')';
-	$modal_re = qr($modal_re);
-	my $pronoun_re = '\b(?:' . join("|", @pronoun) . ')\b';
-	$pronoun_re = qr($pronoun_re);
 
 	if ($contract_n_t) {
 
@@ -389,15 +361,16 @@ sub contraction {
 
 
 		my $new_phrase = $verb_phrase;
+	
 		while (1) {
 	
-			if ($new_phrase =~ /($modal_re) not\b/  ) {
+			if ( $new_phrase =~ /($modal_re) not\b/  ) {
 				my $m = $1;
 				if (my $m2 = N_T($m)) {
 					$new_phrase =~ s/$m not\b/$m2/;
 				}
 			}
-			if ($new_phrase =~ /($modal_re) ($pronoun_re) not/) {
+			if ($new_phrase =~ /($modal_re) ($pronoun_re) not\b/ ) {
 				my $p = $2; my $m = $1;
 				if (my $m2 = N_T($m)) {
 					$new_phrase =~ s/$m\b/$m2/;
@@ -442,6 +415,58 @@ sub contraction {
 
 }
 
+
+sub conjugations {
+
+    my ( $tense, $pronoun, $result, @_tenses );
+
+    my %params = @_;
+
+    my @pnouns = defined $params{pronoun} ? 
+		 (ref $params{pronoun}? @{ $params{pronoun} } : $params{pronoun}) 
+		: qw(I you he we they);
+
+    my $conjugs = conjugate(@_);
+
+    @_tenses = grep { defined $conjugs->{$_} } @tenses;
+
+    $result = "";
+    foreach ( $tense = 0 ; $tense <= $#_tenses ; $tense += 2 ) {
+        my $t1 = $_tenses[$tense];
+        my $t2 = $tense < scalar @_tenses ? $_tenses[ $tense + 1 ] : undef;
+        $result .= centered( uc( $_tenses[$tense] ),       35, "-" );
+        $result .= " ";
+        $result .= centered( uc( $_tenses[ $tense + 1 ] ), 35, "-" )
+          if defined $t2;
+        $result .= "\n";
+        for $pronoun (@pnouns) {
+            my $s1 =
+              defined $conjugs->{$t1}{$pronoun}
+              ? $conjugs->{$t1}{$pronoun}
+              : '';
+            my $s2 =
+                 defined $t2
+              && defined $conjugs->{$t2}{$pronoun}
+              ? $conjugs->{$t2}{$pronoun}
+              : '';
+            $result .= sprintf "%-35s %-35s\n", $s1, $s2;
+
+        }
+    }
+    return $result;
+
+    sub centered {
+        my ( $string, $len, $fill ) = @_;
+        $fill = " " unless defined $fill;
+        my $result = $fill x ( ( $len - length($string) ) / 2 - 1 );
+        $result .= " ";
+        $result .= $string;
+        $result .= " ";
+        $result .= $fill x ( $len - length($result) );
+        return $result;
+    }
+}
+
 sub N_T {
 
     #add contracted negation to modal verbs:
@@ -457,6 +482,8 @@ sub N_T {
 
 sub init_verb {
     my $inf = shift;
+
+    return (undef, undef, undef, undef) if match_any($inf, qw(should could would can shall will may might must));
 
     my $stem = $inf;
 
@@ -482,7 +509,7 @@ sub init_verb {
     $past = $part;
 
     $gerund = $stem . 'ing';
-    $gerund =~ s/.([bcdfghjklmnpqrstvwxyz])eing$/$1ing/;
+    $gerund =~ s/(.[bcdfghjklmnpqrstvwxyz])eing$/$1ing/;
     $gerund =~ s/ieing$/ying/;
 
     if ( $inf =~ /[ho]$/ ) {
@@ -512,7 +539,7 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 
 =head1 SYNOPSIS
 
-	use Lingua::EN::Conjugate qw( conjugate conjugations );
+	use Lingua::EN::Conjugate qw( conjugate conjugations contraction);
 	
 
 	print conjugate( 'verb'=>'look', 
@@ -520,22 +547,30 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 				'pronoun'=>'he',
 				'negation'=>'not' );  
  
-			# he was not looking
+			# "he was not looking"
 
 
 	my $go = conjugate( 'verb'=>'go', 
 				'tense'=>[qw(past modal_perf)], 
-				'modal'=>'might', 
-				'passive' => 1 ) ; 
+				'modal'=>'might') ; 
+				
+			# returns a hashref  
    
-			# returns a hashref   	
+	print $go->{modal_perf}{I};   # "I might have gone"
+			 	
 
 
 	my @be = conjugate( 'verb'=>'be', 
 				'pronoun'=>[qw(I we)], 
-				'tense'=>'past_prog' );
+				'tense'=>'past_prog',
+				'negation'=>'n_t' );
 
 			# returns an array
+	print $be[0];   # "I wasn't going"
+
+	#form contractions
+
+	print contraction("Are you not entertained?"); # "Aren't you entertained?"
 
 
 	#pretty printed table of conjugations
@@ -614,7 +649,7 @@ In array context, it returns an array of conjugated forms ordered by tense, then
 
 'verb'=>'coagulate'
 
-The only required parameter.
+The only required parameter.  The verb should be in it's infinitive form (no "is", "was" etc.) and without a "to" tacked on the front.
 
 =item tense
 
