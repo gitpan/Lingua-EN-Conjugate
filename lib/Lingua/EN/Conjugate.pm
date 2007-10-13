@@ -1,3 +1,4 @@
+
 package Lingua::EN::Conjugate;
 
 use Data::Dumper;
@@ -17,6 +18,18 @@ use warnings;
 use strict;
 use diagnostics;
 
+
+use Lingua::EN::Contraction qw(contract_n_t contract_other);
+
+
+use Memoize;
+memoize('stem');
+memoize('participle');
+memoize('past');
+memoize('gerund');
+memoize('s_form');
+
+
 use vars qw(
   $VERSION
   %irreg
@@ -28,7 +41,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.294';
+$VERSION = '0.3';
 @pron    = qw(I you we he she it they);
 
 
@@ -127,7 +140,7 @@ sub conjugate {
     our ($inf, $modal, $passive, $allow_contractions, $question, $negation, $no_pronoun);
 
    #forms of the verb determined by "init_verb":
-    our ($part, $past, $gerund, $s_form,);
+    #our ($part, $past, $gerund, $s_form,);
 
     $inf =
       defined $params{verb} ? $params{verb} : warn "must define a verb!!\n",
@@ -149,7 +162,7 @@ sub conjugate {
     $question = defined $params{question} ? $params{question} : 0;
     $negation = defined $params{negation} ? $params{negation} : undef;
 
-    ( $part, $past, $gerund, $s_form ) = init_verb($inf);
+   # ( $part, $past, $gerund, $s_form ) = init_verb($inf);
 
     if (   ref $params{pronoun}
         or ref $params{tense}
@@ -165,14 +178,14 @@ sub conjugate {
         for my $t (@t) {
 
             my @p =
-              ref $params{pronoun} ? grep { defined _conj( $t, $_ ) }
+              ref $params{pronoun} ? grep { defined _conj($inf, $t, $_ ) }
               @{ $params{pronoun} }
               : defined $params{pronoun} ? $params{pronoun}
-              :   grep { defined _conj( $t, $_ ) } @pron;
+              :   grep { defined _conj( $inf, $t, $_ ) } @pron;
 
             for my $p (@p) {
-                next unless defined _conj( $t, $p );
-                $ret->{$t}{$p} = _conj( $t, $p );
+                next unless defined _conj($inf, $t, $p );
+                $ret->{$t}{$p} = _conj($inf, $t, $p );
             }
         }
 
@@ -189,11 +202,17 @@ sub conjugate {
         else { return $ret }
     }
 
-    return _conj( $params{tense}, $params{pronoun} );
+    return _conj($inf, $params{tense}, $params{pronoun} );
 
-    sub _conj {
 
-        my ( $tense, $pronoun ) = @_;
+sub _conj {
+
+        my ( $inf, $tense, $pronoun ) = @_;
+	my $part = participle($inf);
+	my $past = past($inf);
+	my $gerund = gerund($inf);
+	my $s_form = s_form($inf);
+
 
         # special cases...
         if ( match_any( $inf, qw(should could would can shall will may might must))) {
@@ -253,7 +272,7 @@ sub conjugate {
         if ($negation) {
             $pattern =~ s/\*/not/;
 	    if ($negation eq 'n_t') {
-		$pattern = contraction($pattern, 1, 0);
+		$pattern = contract_n_t($pattern);
 	    }
         }
 	else {
@@ -261,32 +280,13 @@ sub conjugate {
 	}
 
 	if ($allow_contractions) {
-	   $pattern = contraction($pattern, 0, 1);
+	   $pattern = contract_other($pattern);
 	}
 
         return $pattern;
 
-    }
-
-sub match_any {
-	my $a = shift;
-	my @b = @_;
-	for (@b) { return 1 if $a =~ /\b$_\b/i ; }
-	return undef;
 }
 
-
-sub PRESENT {
-    my $inf     = shift;
-    my $s_form  = shift;
-    my $pronoun = shift;
-
-    if ( $inf =~ /^be$/i )   { return BE($pronoun); }
-    if ( $inf =~ /^have$/i ) { return HAVE($pronoun); }
-    if (defined $s_form and match_any($pronoun, qw(he she it))) { return $s_form; }
- 
-    return $inf;
-}
 
 sub IMPERATIVE {
     my $inf      = shift;
@@ -313,6 +313,28 @@ sub IMPERATIVE {
         return undef;
     }
 }
+
+}
+sub match_any {
+	my $a = shift;
+	my @b = @_;
+	for (@b) { return 1 if $a =~ /\b$_\b/i ; }
+	return undef;
+}
+
+
+sub PRESENT {
+    my $inf     = shift;
+    my $s_form  = shift;
+    my $pronoun = shift;
+
+    if ( $inf =~ /^be$/i )   { return BE($pronoun); }
+    if ( $inf =~ /^have$/i ) { return HAVE($pronoun); }
+    if (defined $s_form and match_any($pronoun, qw(he she it))) { return $s_form; }
+ 
+    return $inf;
+}
+
 
 sub BE {
     my $pronoun = shift;
@@ -341,80 +363,6 @@ sub DO {
  if (match_any($pronoun, qw(he she it))) { return 'does'; }
     return 'do';
 }
-
-}
-
-sub contraction {
-
-	my $verb_phrase = $_[0];
-	my $contract_n_t = 1;
-	my $contract_other = 1;
-	if (scalar @_ > 1) { $contract_n_t = $_[1]; }
-	if (scalar @_ > 2) { $contract_other = $_[2]; }
-
-
-	if ($contract_n_t) {
-
-		# MODAL-NOT -> MODAL-N_T
-		# MODAL-PRONOUN-NOT -> MODAL-N_T-PRONOUN
-	
-
-
-		my $new_phrase = $verb_phrase;
-	
-		while (1) {
-	
-			if ( $new_phrase =~ /($modal_re) not\b/  ) {
-				my $m = $1;
-				if (my $m2 = N_T($m)) {
-					$new_phrase =~ s/$m not\b/$m2/;
-				}
-			}
-			if ($new_phrase =~ /($modal_re) ($pronoun_re) not\b/ ) {
-				my $p = $2; my $m = $1;
-				if (my $m2 = N_T($m)) {
-					$new_phrase =~ s/$m\b/$m2/;
-					$new_phrase =~ s/$p not\b/$p/;
-				}
-			}
-			last if $new_phrase eq $verb_phrase;
-			$verb_phrase = $new_phrase;
-		}
-	}
-	if ($contract_other) {
-		while ($verb_phrase =~ /(\b([\w']*(?: not)?) ?($pronoun_re|$modal_re|let) ($modal_re|us)\b)/g) {
-			#print "1 -> $1\n\t, 2-> $2, 3->$3, 4->$4\n";
-			my $orig_phrase = $1;
-			my $_phrase = $1;
-			my $w1 = $2;
-			my $w2 = $3;
-			my $w3 = $4;
-
-			# don't form contractions following modal verbs:
-			# nobody ever says "could I've been walking?", they say "could I have been walking?".
-
-			next if $w1 =~ /$modal_re/;
-		
-			$_phrase =~ s/\blet us\b/let's/ig;
-			$_phrase =~ s/\b(she|he|it|I|we|they|you) would\b/$1'd/ig;
-			$_phrase =~ s/\b(she|he|it|I|we|they|you) will\b/$1'll/ig;
-			$_phrase =~ s/\b(she|he|it) is\b/$1's/ig;
-			$_phrase =~ s/\b(we|they|you) are\b/$1're/ig;
-			$_phrase =~ s/\bI am\b/I'm/ig;
-			$_phrase =~ s/\b(I|we|they|you|could|should|would) have\b/$1've/ig;
-			$_phrase =~ s/\b(I|we|they|you|he|she) had\b/$1'd/ig;
-			$_phrase =~ s/\b(he|she) has\b/$1's/ig;
-
-			next if $_phrase eq $orig_phrase;
-
-			$verb_phrase =~ s/$orig_phrase/$_phrase/;
-		}
-	}
-
-	return $verb_phrase;
-
-}
-
 
 sub conjugations {
 
@@ -467,27 +415,13 @@ sub conjugations {
     }
 }
 
-sub N_T {
 
-    #add contracted negation to modal verbs:
-    my $modal       = shift;
 
-    return undef if match_any($modal, qw(be being been am may));
-  
-    my %exceptions =
-      ( "will" => "won't", "can" => "can't", "shall" => "shan't" );
-    return $exceptions{$modal} if defined $exceptions{$modal};
-    return $modal . "n't";
-}
 
-sub init_verb {
+sub stem {
+
     my $inf = shift;
-
-    return (undef, undef, undef, undef) if match_any($inf, qw(should could would can shall will may might must));
-
     my $stem = $inf;
-
-    my ($gerund, $part, $past, $s_form);
 
     if ( $stem =~ /[bcdfghjklmnpqrstvwxyz][aeiou][bcdfghjklmnpqrstv]$/ ) {
 
@@ -501,16 +435,50 @@ sub init_verb {
         $stem =~ s/(\w)$/$1$1/ unless $no_double{$stem};
 
     }
+    return $stem;
+}
 
-    $part = $stem . 'ed';
+sub participle {
+
+	my $inf = shift;
+	return $irreg{$inf}{part} if defined $irreg{$inf};
+
+	my $stem = stem($inf);
+
+    my $part = $stem . 'ed';
     $part =~ s/([bcdfghjklmnpqrstvwxyz])eed$/$1ed/;
     $part =~ s/([bcdfghjklmnpqrstvwxyz])yed$/$1ied/;
     $part =~ s/eed$/ed/;
-    $past = $part;
 
-    $gerund = $stem . 'ing';
+
+	return $part;
+
+}
+
+sub past {
+
+	my $inf = shift;
+	return $irreg{$inf}{past} if defined $irreg{$inf};
+	return participle($inf);
+}
+
+sub gerund {
+
+	my $inf = shift;
+	my $stem = stem($inf);
+
+
+    my $gerund = $stem . 'ing';
     $gerund =~ s/(.[bcdfghjklmnpqrstvwxyz])eing$/$1ing/;
     $gerund =~ s/ieing$/ying/;
+	return $gerund;
+
+}
+
+sub s_form {
+
+	my $inf = shift;
+	my $s_form;
 
     if ( $inf =~ /[ho]$/ ) {
         $s_form = $inf . "es";
@@ -523,13 +491,10 @@ sub init_verb {
         $s_form = $inf . "s";
     }
 
-    if ( defined $irreg{$inf} ) {
-        $part = $irreg{$inf}{part};
-        $past = $irreg{$inf}{past};
-    }
+	return $s_form;
 
-    return ( $part, $past, $gerund, $s_form );
 }
+
 
 1;
 
