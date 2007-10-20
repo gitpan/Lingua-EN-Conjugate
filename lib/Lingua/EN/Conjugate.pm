@@ -18,7 +18,6 @@ use warnings;
 use strict;
 use diagnostics;
 
-
 use Lingua::EN::Contraction qw(contract_n_t contract_other);
 
 
@@ -41,7 +40,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.301';
+$VERSION = '0.302';
 @pron    = qw(I you we he she it they);
 
 
