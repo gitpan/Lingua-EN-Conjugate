@@ -1,12 +1,13 @@
 ---
 name: Lingua-EN-Conjugate
-version: 0.304
+version: 0.305
 author:
   - 'Russ Graham <RWG@cpan.org>'
 abstract: Conjugation of English verbs
 license: perl
 build_requires:
   Lingua::EN::Contraction: 0
+  Memoize: 0
   Test::More: 0
 generated_by: Module::Build version 0.2805
 meta-spec:
@@ -15,6 +16,6 @@ meta-spec:
 provides:
   Lingua::EN::Conjugate:
     file: lib/Lingua/EN/Conjugate.pm
-    version: 0.304
+    version: 0.305
 resources:
   license: http://dev.perl.org/licenses/

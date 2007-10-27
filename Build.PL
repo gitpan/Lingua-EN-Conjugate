@@ -9,7 +9,8 @@ my $builder = Module::Build->new(
     dist_version_from   => 'lib/Lingua/EN/Conjugate.pm',
     build_requires => {
         'Test::More' => 0,
-	'Lingua::EN::Contraction' => 0
+	'Lingua::EN::Contraction' => 0,
+	'Memoize' => 0
     },
     add_to_cleanup      => [ 'Lingua-EN-Conjugate-*' ],
 );

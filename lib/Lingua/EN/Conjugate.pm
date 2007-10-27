@@ -40,7 +40,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.304';
+$VERSION = '0.305';
 @pron    = qw(I you we he she it they);
 
 
