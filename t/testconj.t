@@ -1,10 +1,12 @@
 
 use Test;
 
-BEGIN { plan tests => 25 }	
+BEGIN { plan tests => 26 }	
 
 use Lingua::EN::Conjugate qw( conjugate conjugations );
 use Data::Dumper;
+
+ok(conjugate('verb'=>'set', 'tense'=>'present', 'pronoun'=>'it', 'passive'=>1, 'negation'=>1), 'it is not set');
 
 ok(conjugate('verb'=>'be', 'tense'=>'present', 'pronoun'=>'she'), 'she is');
 ok(conjugate('verb'=>'have', 'tense'=>'present_prog', 'pronoun'=>'it'), 'it is having');

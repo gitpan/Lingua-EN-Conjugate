@@ -42,7 +42,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.306';
+$VERSION = '0.307';
 @pron    = qw(I you we he she it they);
 
 
@@ -220,10 +220,10 @@ sub _conj {
 		return undef unless $tense eq 'present';
 	}
 	if ( $inf !~ $modal_re ) {
-        if ( $tense eq 'present' and (defined $negation or $question)) {
+        if ( $tense eq 'present' and (defined $negation or $question) and not defined $passive) {
             $tense = 'present_do';
         }
-        if ( $tense eq 'past' and (defined $negation or $question)) {
+        if ( $tense eq 'past' and (defined $negation or $question) and not defined $passive) {
 	    $tense = 'past_do'; 
 	}
 	}
@@ -534,10 +534,6 @@ Lingua::EN::Conjugate - Conjugation of English verbs
 			# returns an array
 	print $be[0];   # "I wasn't going"
 
-	#form contractions
-
-	print contraction("Are you not entertained?"); # "Aren't you entertained?"
-
 
 	#pretty printed table of conjugations
 
@@ -705,7 +701,10 @@ None by default. You can export the following functions and variables:
 
 	conjugate
         conjugations
-	contraction
+	past
+	participle
+	gerund
+	s_form
 	@tenses
 	@pronouns
 
@@ -734,8 +733,6 @@ L<Lingua::IT::Conjugate>
 =item
 
 L<Lingua::PT::Conjugate>
-
-=back
 
 =item
 
