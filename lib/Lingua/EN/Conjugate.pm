@@ -9,7 +9,9 @@ require Exporter;
 @EXPORT_OK = qw(
   conjugate
   conjugations
-  contraction
+  participle
+  past
+  gerund
   @tenses
   @pron
 );
@@ -21,13 +23,13 @@ use diagnostics;
 use Lingua::EN::Contraction qw(contract_n_t contract_other);
 
 
-use Memoize;
+if (eval "use Memoize") {
 memoize('stem');
 memoize('participle');
 memoize('past');
 memoize('gerund');
 memoize('s_form');
-
+}
 
 use vars qw(
   $VERSION
@@ -40,7 +42,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.305';
+$VERSION = '0.306';
 @pron    = qw(I you we he she it they);
 
 
@@ -599,8 +601,23 @@ Thanks to Susan Jones for the list of irregular verbs and an explanation of Engl
 
 =over
 
-=item conjugate('verb'=> 'go' , OPTIONS)
+=item past($infinitive)
 
+past tense form of the verb: "go" -> "went"
+
+=item participle($infinitive)
+
+past participle form of the verb: "go" -> "gone"
+
+=item gerund($infinitive)
+
+"-ing" form of the verb: "go" -> "going"
+
+=item s_form($infinitive)
+
+third person singular form of the verb: "go" -> "goes"
+
+=item conjugate('verb'=> 'go' , OPTIONS)
 
 In scalar context with tense and pronoun defined as scalars, only one conjugation is returned.
 
@@ -675,18 +692,6 @@ The negation rule above is applied before the allow_contractions rule is checked
 	allow_contractions =>1, negation=>not : "he's not walking";
 	allow_contractions =>0, negation=>not " "he is not walking";
 
-=item contraction($phrase, contract_n_t, contract_other)
-	
-	$sentance = "I did not know that you are not here";
-	contraction($sentance)       -> "I didn't know that you aren't here";
-	contraction($sentance, 0, 1) -> "I did not know that you're not here";
-	contraction($sentance, 1, 0) -> "I didn't know that you aren't here";
-
-	
-Lets you contract-ify arbitrary sentances.  The default values of contract_n_t and contract_other are both
-1, and it prefers to contract "not" before contracting anything else, as described in the "negation" rule
-above. 
-
 
 =item conjugations()
   
@@ -729,6 +734,12 @@ L<Lingua::IT::Conjugate>
 =item
 
 L<Lingua::PT::Conjugate>
+
+=back
+
+=item
+
+L<Lingua::EN::Contraction>
 
 =back
 
