@@ -32,3 +32,16 @@ The passive tense was added.
 0.29
 
 "contraction" subroutine is exported
+
+0.3
+
+Contraction subroutine is put in a different module, Lingua::EN::Contraction
+
+0.3xx
+
+Various bug fixes, listing the prerequisites in Meta.yml, spelling changes in the docs... 
+
+
+0.308
+
+Removed "use diagnostics"

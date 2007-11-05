@@ -18,7 +18,7 @@ require Exporter;
 
 use warnings;
 use strict;
-use diagnostics;
+#use diagnostics;
 
 use Lingua::EN::Contraction qw(contract_n_t contract_other);
 
@@ -42,7 +42,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.307';
+$VERSION = '0.308';
 @pron    = qw(I you we he she it they);
 
 
@@ -626,7 +626,7 @@ In array context, it returns an array of conjugated forms ordered by tense, then
 
 'verb'=>'coagulate'
 
-The only required parameter.  The verb should be in it's infinitive form (no "is", "was" etc.) and without a "to" tacked on the front.
+The only required parameter.  The verb should be in its infinitive form (no "is", "was" etc.) and without a "to" tacked on the front.
 
 =item tense
 

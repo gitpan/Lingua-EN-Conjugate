@@ -1,6 +1,6 @@
 ---
 name: Lingua-EN-Conjugate
-version: 0.307
+version: 0.308
 author:
   - 'Russ Graham <RWG@cpan.org>'
 abstract: Conjugation of English verbs
@@ -16,6 +16,6 @@ meta-spec:
 provides:
   Lingua::EN::Conjugate:
     file: lib/Lingua/EN/Conjugate.pm
-    version: 0.307
+    version: 0.308
 resources:
   license: http://dev.perl.org/licenses/
