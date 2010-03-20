@@ -45,3 +45,9 @@ Various bug fixes, listing the prerequisites in Meta.yml, spelling changes in th
 0.308
 
 Removed "use diagnostics"
+
+0.310
+
+changed the __DATA__ section to subroutines; exported s_form()
+
+

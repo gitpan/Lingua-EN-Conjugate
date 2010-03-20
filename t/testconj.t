@@ -1,10 +1,11 @@
 
 use Test;
 
-BEGIN { plan tests => 26 }	
+BEGIN { plan tests => 28 }	
 
-use Lingua::EN::Conjugate qw( conjugate conjugations );
+use Lingua::EN::Conjugate qw( conjugate conjugations s_form);
 use Data::Dumper;
+
 
 ok(conjugate('verb'=>'set', 'tense'=>'present', 'pronoun'=>'it', 'passive'=>1, 'negation'=>1), 'it is not set');
 
@@ -59,7 +60,8 @@ ok(conjugate( 'verb' => 'walk', 'tense' => 'present_prog', 'pronoun' => 'he', 'n
 	ok(conjugate('verb'=>'go', 'pronoun'=>'you', 'tense'=>'past', 'question'=>1), 'did you go');
 	ok(conjugate('verb'=>'happen', 'pronoun'=>'it', 'tense'=>'past', 'negation'=>'n_t'), 'it didn\'t happen');
 	ok(conjugate('verb'=>'prefer', 'pronoun'=>'they', 'tense'=>'modal_perf', 'modal'=>'would'), 'they would have preferred');
-
-
 	
+ ok(conjugate('verb'=>'suffer', 'tense'=>'past', 'pronoun'=>'I'), "I suffered");
 
+
+ok(s_form("go"), "goes", "go => goes");

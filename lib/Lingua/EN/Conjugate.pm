@@ -12,8 +12,11 @@ require Exporter;
   participle
   past
   gerund
+  s_form
   @tenses
   @pron
+  %irreg
+  %no_double
 );
 
 use warnings;
@@ -42,7 +45,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.308';
+$VERSION = '0.310';
 @pron    = qw(I you we he she it they);
 
 
@@ -105,31 +108,11 @@ $pronoun_re = qr/$pronoun_re/i;
       #  				@ = pronoun, * = not
 );
 
+%irreg = _irreg();
 
-while (<DATA>) {
-    chomp;
-    next if /\[IRREG\]/;
-    last if /\[NO-DOUBLE\]/;
-    next unless /\w/;
-    my ( $verb, $simp, $part ) = split /-/, $_;
 
-    $verb =~ s/\(.*//;
-    $simp =~ s/\/.*//;
-    $part =~ s/\/.*//;
-    ( $verb, $simp, $part ) =
-      map { s/^\s*|\s*$//g; $_ } ( $verb, $simp, $part );
-    $irreg{$verb} = { past => $simp, part => $part };
+$no_double{$_} = 1 for _no_double();
 
-    #print "$verb, $simp, $part\n";
-
-}
-while (<DATA>) {
-    my $line = $_;
-    chomp $line;
-    $line =~ s/^ *| *$//g;
-    my @nd = split / /, $line;
-    $no_double{$_} = 1 for @nd;
-}
 
 
 
@@ -742,8 +725,26 @@ L<Lingua::EN::Contraction>
 
 =cut
 
-__DATA__
-[IRREG]
+sub _irreg {
+    my %irreg;    for (split /\n/, _irreg_data()) {
+	    next unless /\w/;
+	    my ( $verb, $simp, $part ) = split /-/, $_;
+	    $verb =~ s/\(.*//;
+	    $simp =~ s/\/.*//;
+	    $part =~ s/\/.*//;
+	    ( $verb, $simp, $part ) =
+	      map { s/^\s*|\s*$//g; $_ } ( $verb, $simp, $part );
+	    $irreg{$verb} = { past => $simp, part => $part };
+    }
+
+
+	return %irreg;
+    #print "$verb, $simp, $part\n";
+
+}
+
+sub _irreg_data {
+return <<EOF;
 awake - awoke - awoken
 be - was, were - been
 bear - bore - born
@@ -920,8 +921,11 @@ withhold - withheld - withheld
 withstand - withstood - withstood
 wring - wrung - wrung
 write - wrote - written
+EOF
 
-[NO-DOUBLE]
+}
+sub _no_double{
+return qw(
  abandon accouter accredit adhibit administer alter anchor answer attrit audit
  author ballot banner batten bedizen bespatter betoken bewilder billet blacken
  blither blossom bother brighten broaden broider burden caparison catalog censor
@@ -946,3 +950,5 @@ write - wrote - written
  sugar summon surrender swelter sypher tamper tauten tender thicken threaten
  thunder totter toughen tower transit tucker unburden uncover unfetter unloosen
  upholster utter visit vomit wander water weaken whiten winter wonder worsen
+);
+}
