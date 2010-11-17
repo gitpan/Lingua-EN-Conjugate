@@ -1,12 +1,12 @@
 
 use Test;
 
-BEGIN { plan tests => 28 }	
+BEGIN { plan tests => 32 }	
 
-use Lingua::EN::Conjugate qw( conjugate conjugations s_form);
+use Lingua::EN::Conjugate qw( conjugate conjugations s_form past);
 use Data::Dumper;
 
-
+ok(past('dye'), 'dyed');
 ok(conjugate('verb'=>'set', 'tense'=>'present', 'pronoun'=>'it', 'passive'=>1, 'negation'=>1), 'it is not set');
 
 ok(conjugate('verb'=>'be', 'tense'=>'present', 'pronoun'=>'she'), 'she is');
@@ -65,3 +65,7 @@ ok(conjugate( 'verb' => 'walk', 'tense' => 'present_prog', 'pronoun' => 'he', 'n
 
 
 ok(s_form("go"), "goes", "go => goes");
+ok(s_form("cross"), "crosses", "cross => crosses");
+ok(s_form("escort"), "escorts", "escort=>escorts");
+ok(s_form("must"), "must", "must=>must");
+

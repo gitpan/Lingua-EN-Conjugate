@@ -8,7 +8,7 @@ build_requires:
   Test::More: 0
 configure_requires:
   Module::Build: 0.36
-generated_by: 'Module::Build version 0.3603'
+generated_by: 'Module::Build version 0.3607'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -17,7 +17,7 @@ name: Lingua-EN-Conjugate
 provides:
   Lingua::EN::Conjugate:
     file: lib/Lingua/EN/Conjugate.pm
-    version: 0.310
+    version: 0.311
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.310
+version: 0.311

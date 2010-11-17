@@ -45,7 +45,7 @@ use vars qw(
 
 );
 
-$VERSION = '0.310';
+$VERSION = '0.311';
 @pron    = qw(I you we he she it they);
 
 
@@ -463,19 +463,25 @@ sub s_form {
 
 	my $inf = shift;
 	my $s_form;
+#may might must be being been am are is was were do does did should could would have has had will can shall
+       if ( $inf eq 'be') { $s_form = 'is'; }
+    elsif ( $inf eq 'do') { $s_form = 'does'; }
+    elsif ( $inf eq 'have') { $s_form = 'has'; }
+    elsif ( $inf =~ $modal_re ) { $s_form = $inf; }
 
-    if ( $inf =~ /[ho]$/ ) {
+    elsif ( $inf =~ /[ho]$|ss$/ ) {
         $s_form = $inf . "es";
     }
     elsif ( $inf =~ /[bcdfghjklmnpqrstvwxyz]y$/ ) {
 	$s_form = $inf;
         $s_form =~ s/y$/ies/;
     }
+
     else {
         $s_form = $inf . "s";
     }
 
-	return $s_form;
+    return $s_form;
 
 }
 
@@ -783,6 +789,7 @@ draw - drew - drawn
 dream - dreamed/dreamt - dreamed/dreamt
 drive - drove - driven
 drink - drank - drunk
+dye - dyed - dyed
 eat - ate - eaten
 fall - fell - fallen
 feed - fed - fed

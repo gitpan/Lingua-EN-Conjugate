@@ -50,4 +50,7 @@ Removed "use diagnostics"
 
 changed the __DATA__ section to subroutines; exported s_form()
 
+0.311
+
+fixed past tense of 'dye' to 'dyed'
 
